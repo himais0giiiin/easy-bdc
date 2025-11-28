@@ -1,11 +1,16 @@
 {
   "custom_python_code": {
-    "title": "🐍 Pythonコード実行",
+    "version": 2,
+    "title": "",
     "type": "statement",
-    "inputs": [
+    "fields": [
       {
-        "name": "CODE",
+        "kind": "label",
+        "text": "🐍 Pythonコード実行"
+      },
+      {
         "inputType": "multiline_text",
+        "name": "CODE",
         "default": "print('Hello World')"
       }
     ],
@@ -17,8 +22,12 @@
   "on_ready": {
     "title": "🏁 Botが起動したとき",
     "type": "statement",
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 30,
@@ -27,8 +36,12 @@
   "on_message_create": {
     "title": "📩 メッセージを受信したとき",
     "type": "statement",
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 30,
@@ -37,8 +50,12 @@
   "on_member_join": {
     "title": "👤 メンバーが参加したとき",
     "type": "statement",
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 30,
@@ -47,8 +64,12 @@
   "on_member_remove": {
     "title": "👋 メンバーが退出したとき",
     "type": "statement",
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 30,
@@ -60,161 +81,274 @@
     "output": "String",
     "color": 30
   },
-
   "on_command_executed": {
     "version": 2,
-    "title": "", 
+    "title": "",
     "type": "statement",
-    "fields":[
-      {"kind":"label", "text":"⚡ スラッシュコマンド /"},
-      { "inputType": "text", "name": "COMMAND_NAME", "default": "ping" },
-      {"kind":"label", "text":"を実行したとき"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "⚡ スラッシュコマンド /"
+      },
+      {
+        "inputType": "text",
+        "name": "COMMAND_NAME",
+        "default": "ping"
+      },
+      {
+        "kind": "label",
+        "text": "を実行したとき"
+      }
     ],
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 230
   },
-
   "prefix_command": {
     "version": 2,
     "title": "",
     "type": "statement",
     "fields": [
-      {"kind":"label", "text":"🗣️ プレフィックスコマンド /"},
-      { "inputType": "text", "name": "COMMAND_NAME", "default": "ping" },
-      {"kind":"label", "text":"を実行したとき"}
+      {
+        "kind": "label",
+        "text": "🗣️ プレフィックスコマンド /"
+      },
+      {
+        "inputType": "text",
+        "name": "COMMAND_NAME",
+        "default": "ping"
+      },
+      {
+        "kind": "label",
+        "text": "を実行したとき"
+      }
     ],
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 230
   },
-
   "get_command_arg": {
     "version": 2,
     "title": "",
     "type": "output",
     "fields": [
-      {"kind":"label", "text":"コマンド引数"},
-      { "inputType": "text", "name": "ARG_NAME", "default": "name" },
-      {"kind":"label", "text":"の値"}
+      {
+        "kind": "label",
+        "text": "コマンド引数"
+      },
+      {
+        "inputType": "text",
+        "name": "ARG_NAME",
+        "default": "name"
+      },
+      {
+        "kind": "label",
+        "text": "の値"
+      }
     ],
-    "output": ["String", "Number"],
+    "output": [
+      "String",
+      "Number"
+    ],
     "color": 230
   },
-
   "get_user_info": {
     "version": 2,
     "title": "",
     "type": "output",
     "fields": [
-      { "kind": "label", "text": "実行者(対象)の" },
+      {
+        "kind": "label",
+        "text": "実行者(対象)の"
+      },
       {
         "name": "TYPE",
         "inputType": "dropdown",
         "options": [
-          ["ユーザーID", "id"],
-          ["名前 (ユーザー名)", "name"],
-          ["表示名 (ニックネーム)", "display_name"],
-          ["メンション (<@ID>)", "mention"]
+          [
+            "ユーザーID",
+            "id"
+          ],
+          [
+            "名前 (ユーザー名)",
+            "name"
+          ],
+          [
+            "表示名 (ニックネーム)",
+            "display_name"
+          ],
+          [
+            "メンション (<@ID>)",
+            "mention"
+          ]
         ]
       }
     ],
     "output": "String",
     "color": 260
   },
-
   "get_member_detail": {
     "version": 2,
     "title": "👤 実行者(対象)の詳細:",
     "type": "output",
     "fields": [
-      {"kind":"label", "text":"実行者(対象)の"},
+      {
+        "kind": "label",
+        "text": "実行者(対象)の"
+      },
       {
         "name": "TYPE",
         "inputType": "dropdown",
         "options": [
-          ["アバターURL", "avatar.url"],
-          ["アカウント作成日", "created_at"],
-          ["サーバー参加日", "joined_at"],
-          ["ステータス", "status"]
+          [
+            "アバターURL",
+            "avatar.url"
+          ],
+          [
+            "アカウント作成日",
+            "created_at"
+          ],
+          [
+            "サーバー参加日",
+            "joined_at"
+          ],
+          [
+            "ステータス",
+            "status"
+          ]
         ]
       }
     ],
     "output": "String",
     "color": 260
   },
-"get_channel_info": {
-  "version": 2,
+  "get_channel_info": {
+    "version": 2,
     "title": "",
     "type": "output",
     "fields": [
-      { "kind": "label", "text": "現在の" },
+      {
+        "kind": "label",
+        "text": "現在の"
+      },
       {
         "name": "TYPE",
         "inputType": "dropdown",
         "options": [
-          ["チャンネルID", "id"],
-          ["チャンネル名", "name"],
-          ["メンション (<#ID>)", "mention"]
+          [
+            "チャンネルID",
+            "id"
+          ],
+          [
+            "チャンネル名",
+            "name"
+          ],
+          [
+            "メンション (<#ID>)",
+            "mention"
+          ]
         ]
       }
     ],
     "output": "String",
     "color": 260
   },
-
   "get_server_info": {
     "version": 2,
     "title": "",
     "type": "output",
     "fields": [
-      { "kind": "label", "text": "サーバーの" },
+      {
+        "kind": "label",
+        "text": "サーバーの"
+      },
       {
         "name": "TYPE",
         "inputType": "dropdown",
         "options": [
-          ["サーバーID", "id"],
-          ["サーバー名", "name"],
-          ["メンバー数", "member_count"]
+          [
+            "サーバーID",
+            "id"
+          ],
+          [
+            "サーバー名",
+            "name"
+          ],
+          [
+            "メンバー数",
+            "member_count"
+          ]
         ]
       }
     ],
-    "output": ["String", "Number"],
+    "output": [
+      "String",
+      "Number"
+    ],
     "color": 260
   },
-
   "member_has_role": {
     "version": 2,
     "title": "",
     "type": "output",
-    "fields":[
-      { "kind": "label", "text": "ユーザー" },
-      { "kind": "value", "name": "USER", "check": "String" },
-      { "kind": "label", "text": "がロール(ID) を持っている" },
-      { "kind": "value", "name": "ROLE_ID", "check": "String" }
+    "fields": [
+      {
+        "kind": "label",
+        "text": "ユーザー"
+      },
+      {
+        "kind": "value",
+        "name": "USER",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "がロール(ID) を持っている"
+      },
+      {
+        "kind": "value",
+        "name": "ROLE_ID",
+        "check": "String"
+      }
     ],
     "output": "Boolean",
     "color": 260
   },
-
   "get_current_time": {
     "title": "🕒 現在時刻 (文字列)",
     "type": "output",
     "output": "String",
     "color": 260
   },
-
   "reply_message": {
     "version": 2,
     "title": "↩️",
     "type": "statement",
     "fields": [
-      { "kind": "label", "text": "返信する" },
-      { "kind": "value", "name": "MESSAGE", "check": ["String", "Embed"] },
+      {
+        "kind": "label",
+        "text": "返信する"
+      },
+      {
+        "kind": "value",
+        "name": "MESSAGE",
+        "check": [
+          "String",
+          "Embed"
+        ]
+      },
       {
         "name": "EPHEMERAL",
         "inputType": "checkbox",
@@ -226,23 +360,41 @@
     "next": true,
     "color": 160
   },
-
   "send_dm": {
     "version": 2,
     "title": "📩",
     "type": "statement",
     "fields": [
-      { "kind": "label", "text": "DMを送信(ユーザーID" },
-      { "kind": "value", "name": "USER_ID", "check": "String" },
-      { "kind": "label", "text": "メッセージ" },
-      { "kind": "value", "name": "MESSAGE", "check": ["String", "Embed"] },
-      {"kind":"label", "text":")"}
+      {
+        "kind": "label",
+        "text": "DMを送信(ユーザーID"
+      },
+      {
+        "kind": "value",
+        "name": "USER_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "メッセージ"
+      },
+      {
+        "kind": "value",
+        "name": "MESSAGE",
+        "check": [
+          "String",
+          "Embed"
+        ]
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
-
   "defer_reply": {
     "title": "⏳ 応答を保留する (考え中...)",
     "type": "statement",
@@ -263,43 +415,95 @@
     "title": "✏️",
     "type": "statement",
     "fields": [
-      { "kind": "label", "text": "返信を編集する" },
-      { "kind": "value", "name": "MESSAGE", "check": ["String", "Embed"] }
+      {
+        "kind": "label",
+        "text": "返信を編集する"
+      },
+      {
+        "kind": "value",
+        "name": "MESSAGE",
+        "check": [
+          "String",
+          "Embed"
+        ]
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
-
   "edit_message_by_id": {
     "version": 2,
     "title": "✏️",
     "type": "statement",
     "fields": [
-      { "kind": "label", "text": "チャンネルID" },
-      { "kind": "value", "name": "CHANNEL_ID", "check": "String" },
-      { "kind": "label", "text": "メッセージID" },
-      { "kind": "value", "name": "MESSAGE_ID", "check": "String" },
-      { "kind": "label", "text": "新しい内容" },
-      { "kind": "value", "name": "CONTENT", "check": "String" }
+      {
+        "kind": "label",
+        "text": "チャンネルID"
+      },
+      {
+        "kind": "value",
+        "name": "CHANNEL_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "メッセージID"
+      },
+      {
+        "kind": "value",
+        "name": "MESSAGE_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "\n"
+      },
+      {
+        "kind": "label",
+        "text": "新しい内容"
+      },
+      {
+        "kind": "value",
+        "name": "CONTENT",
+        "check": "String"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
-
   "send_channel_message": {
-    "title": "#️⃣ チャンネルに送信",
+    "version": 2,
+    "title": "#️⃣",
     "type": "statement",
-    "inputs": [
-      { "name": "CHANNEL_ID", "check": "String" },
-      { "name": "MESSAGE", "check": ["String", "Embed"] }
+    "fields": [
+      {
+        "kind": "label",
+        "text": "チャンネルID"
+      },
+      {
+        "kind": "value",
+        "name": "CHANNEL_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "に送信"
+      },
+      {
+        "kind": "value",
+        "name": "MESSAGE",
+        "check": [
+          "String",
+          "Embed"
+        ]
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
-
   "delete_message": {
     "title": "🗑️ このメッセージを削除",
     "type": "statement",
@@ -307,18 +511,33 @@
     "next": true,
     "color": 160
   },
-
   "purge_messages": {
-    "title": "🗑️ メッセージを一括削除",
+    "version": "2",
+    "title": "🗑️",
     "type": "statement",
-    "inputs": [
-      { "name": "LIMIT", "check": "Number" }
+    "fields": [
+      {
+        "kind": "label",
+        "text": "メッセージを一括削除"
+      },
+      {
+        "kind": "label",
+        "text": "("
+      },
+      {
+        "kind": "value",
+        "name": "LIMIT",
+        "check": "Number"
+      },
+      {
+        "kind": "label",
+        "text": "件)"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
-
   "pin_message": {
     "title": "📌 このメッセージをピン留め",
     "type": "statement",
@@ -326,103 +545,187 @@
     "next": true,
     "color": 160
   },
-
   "add_reaction": {
+    "version": "2",
     "title": "👍 リアクションを付ける",
     "type": "statement",
-    "inputs": [
-      { "name": "EMOJI", "check": "String" }
+    "fields": [
+      {
+        "kind": "value",
+        "name": "EMOJI",
+        "check": "String"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
-
   "create_thread": {
+    "version": "2",
     "title": "🧵 スレッドを作成",
     "type": "statement",
-    "inputs": [
-      { "name": "NAME", "check": "String" }
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(スレッド名"
+      },
+      {
+        "kind": "value",
+        "name": "NAME",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
-
   "wait_for_message": {
+    "version": "2",
     "title": "⏳ 返信を待つ",
     "type": "output",
-    "inputs": [
-      { "name": "TIMEOUT", "check": "Number" }
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(最大"
+      },
+      {
+        "kind": "value",
+        "name": "TIMEOUT",
+        "check": "Number"
+      },
+      {
+        "kind": "label",
+        "text": "秒)"
+      }
     ],
     "output": "String",
     "color": 290
   },
-
   "print_to_console": {
     "title": "🖨️ コンソールに表示",
     "type": "statement",
     "inputs": [
-      { "name": "TEXT", "check": null }
+      {
+        "name": "TEXT",
+        "check": null
+      }
     ],
     "previous": true,
     "next": true,
     "color": 160
   },
   "json_load": {
+    "version": "2",
     "title": "📂 JSONファイルを読み込む",
     "type": "output",
-    "inputs": [
-      { "name": "FILENAME", "check": "String" }
+    "fields": [
+      {
+        "kind": "value",
+        "name": "FILENAME",
+        "check": "String"
+      }
+    ],
+    "output": "Object",
+    "color": 30
+  },
+  "json_save": {
+    "version": "2",
+    "title": "💾 データを保存:",
+    "type": "statement",
+    "fields": [
+      {
+        "kind": "value",
+        "name": "DATA",
+        "check": "Object"
+      },
+      {
+        "kind": "label",
+        "text": "ファイル名"
+      },
+      {
+        "kind": "value",
+        "name": "FILENAME",
+        "check": "String"
+      }
     ],
     "output": null,
     "color": 30
   },
-
-  "json_save": {
-    "title": "💾 データを保存",
-    "type": "statement",
-    "inputs": [
-      { "name": "DATA", "check": null },
-      { "name": "FILENAME", "check": "String" }
-    ],
-    "previous": true,
-    "next": true,
-    "color": 30
-  },
-
   "dict_create": {
     "title": "📦 空の辞書(データ)を作成",
     "type": "output",
     "output": null,
     "color": 30
   },
-
   "dict_get": {
-    "title": "辞書 からキー の値を取得",
+    "version": "2",
+    "title": "",
     "type": "output",
-    "inputs": [
-      { "name": "DICT", "check": null },
-      { "name": "KEY", "check": "String" }
+    "fields": [
+      {"kind":"label","text":"辞書"},
+      {
+        "kind": "value",
+        "name": "DICT",
+        "check": null
+      },
+      {
+        "kind": "label",
+        "text": "からキー"
+      },
+      {
+        "kind": "value",
+        "name": "KEY",
+        "check": "String"
+      },
+      {
+        "kind":"label","text":"の値を取得"
+      }
     ],
     "output": null,
     "color": 30
   },
-
   "dict_set": {
-    "title": "辞書 のキー に値 を設定",
+    "version": "2",
+    "title": "辞書",
     "type": "statement",
-    "inputs": [
-      { "name": "DICT", "check": null },
-      { "name": "KEY", "check": "String" },
-      { "name": "VALUE", "check": null }
+    "fields": [
+      {
+        "kind": "value",
+        "name": "DICT",
+        "check": null
+      },
+      {
+        "kind": "label",
+        "text": "のキー"
+      },
+      {
+        "kind": "value",
+        "name": "KEY",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "に値"
+      },
+      {
+        "kind": "value",
+        "name": "VALUE",
+        "check": null
+      },
+      {
+        "kind":"label","text":"を設定"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 30
   },
-
   "join_voice_channel": {
+    "version": "2",
     "title": "🔊 実行者のボイスチャンネルに参加",
     "type": "statement",
     "previous": true,
@@ -431,16 +734,24 @@
   },
 
   "play_audio_file": {
+    "version": "2",
     "title": "🔊 音楽ファイルを再生",
     "type": "statement",
-    "inputs": [
-      { "name": "FILEPATH", "check": "String" }
+    "fields": [
+      {
+        "kind": "value",
+        "name": "FILEPATH",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "(パス)"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 340
   },
-
   "leave_voice_channel": {
     "title": "🔇 ボイスチャンネルから切断",
     "type": "statement",
@@ -448,43 +759,64 @@
     "next": true,
     "color": 340
   },
-
   "create_text_channel": {
+    "version": "2",
     "title": "📁 テキストチャンネル作成",
     "type": "statement",
-    "inputs": [
-      { "name": "NAME", "check": "String" }
+    "fields": [
+      {
+        "kind": "value",
+        "name": "NAME",
+        "check": "String"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 340
   },
-
   "delete_channel": {
     "title": "🗑️ チャンネル削除",
     "type": "statement",
     "inputs": [
-      { "name": "CHANNEL_ID", "check": "String" }
+      {
+        "name": "CHANNEL_ID",
+        "check": "String"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 340
   },
-
   "set_bot_status": {
+    "version": "2",
     "title": "🎮 ステータスを変更",
     "type": "statement",
-    "inputs": [
-      { "name": "STATUS", "check": "String" }
-    ],
     "fields": [
+      {
+        "kind": "value",
+        "name": "STATUS",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "を"
+      },
       {
         "name": "TYPE",
         "inputType": "dropdown",
         "options": [
-          ["プレイ中", "playing"],
-          ["視聴中", "watching"],
-          ["再生中", "listening"]
+          [
+            "プレイ中",
+            "playing"
+          ],
+          [
+            "視聴中",
+            "watching"
+          ],
+          [
+            "再生中",
+            "listening"
+          ]
         ]
       }
     ],
@@ -492,41 +824,61 @@
     "next": true,
     "color": 260
   },
-
   "wait_seconds": {
-    "title": "⏳ 秒待つ",
+    "version" : "2",
+    "title": "⏳",
     "type": "statement",
-    "inputs": [
-      { "name": "SECONDS", "check": "Number" }
+    "fields": [
+      {
+        "kind": "value",
+        "name": "SECONDS",
+        "check": "Number"
+      },
+      {"kind":"label","text":"秒待つ"}
     ],
     "previous": true,
     "next": true,
     "color": 260
   },
-
   "create_embed": {
     "title": "✨ 新しい埋め込み(Embed)作成",
     "type": "output",
-    "statements": ["PROPERTIES"],
+    "statements": [
+      "PROPERTIES"
+    ],
     "output": "Embed",
     "color": 100
   },
-
   "set_embed_property": {
     "title": "Embedのプロパティ設定",
     "type": "statement",
     "inputs": [
-      { "name": "VALUE", "check": "String" }
+      {
+        "name": "VALUE",
+        "check": "String"
+      }
     ],
     "fields": [
       {
         "name": "PROPERTY",
         "inputType": "dropdown",
         "options": [
-          ["タイトル", "title"],
-          ["説明文", "description"],
-          ["色 (0xHex)", "color"],
-          ["画像URL", "image"]
+          [
+            "タイトル",
+            "title"
+          ],
+          [
+            "説明文",
+            "description"
+          ],
+          [
+            "色 (0xHex)",
+            "color"
+          ],
+          [
+            "画像URL",
+            "image"
+          ]
         ]
       }
     ],
@@ -534,15 +886,22 @@
     "next": true,
     "color": 100
   },
-
   "add_embed_field": {
-    "title": "Embedフィールド追加",
+    "version" : "2",
+    "title": "項目名",
     "type": "statement",
-    "inputs": [
-      { "name": "NAME", "check": "String" },
-      { "name": "VALUE", "check": "String" }
-    ],
     "fields": [
+      {
+        "kind": "value",
+        "name": "NAME",
+        "check": "String"
+      },
+      {"kind":"label","text":"内容"},
+      {
+        "kind": "value",
+        "name": "VALUE",
+        "check": "String"
+      },
       {
         "name": "INLINE",
         "inputType": "checkbox",
@@ -555,272 +914,555 @@
     "color": 100
   },
   "kick_user": {
+    "version": "2",
     "title": "👢 Kickする",
     "type": "statement",
-    "inputs": [
-      { "name": "USER_ID", "check": "String" },
-      { "name": "REASON", "check": "String" }
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(ID"
+      },
+      {
+        "kind": "value",
+        "name": "USER_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、理由"
+      },
+      {
+        "kind": "value",
+        "name": "REASON",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 0
   },
-
-  "ban_user":{
-    "version":2,
-    "title" : "🚫 BANする",
-    "type" : "statement",
-    "fields" : [
-      {"kind" : "label", "text":"(ID"},
-      {"kind" : "value","name":"USER_ID", "check":"String"},
-      {"kind" : "label", "text":"、理由"},
-      {"kind" : "value","name":"REASON", "check":"String"},
-      {"kind" : "label", "text":")"}
+  "ban_user": {
+    "version": 2,
+    "title": "🚫 BANする",
+    "type": "statement",
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(ID"
+      },
+      {
+        "kind": "value",
+        "name": "USER_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、理由"
+      },
+      {
+        "kind": "value",
+        "name": "REASON",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ]
-    },
-
+  },
   "timeout_user": {
-    "version":2,
+    "version": 2,
     "title": "🔇 タイムアウト",
     "type": "statement",
-    "fields" : [
-      {"kind" : "label", "text":"(ID"},
-      {"kind" : "value","name":"USER_ID", "check":"String"},
-      {"kind" : "label", "text":"、分"},
-      {"kind" : "value","name":"MINUTES", "check":"Number"},
-      {"kind" : "label", "text":")"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(ID"
+      },
+      {
+        "kind": "value",
+        "name": "USER_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、分"
+      },
+      {
+        "kind": "value",
+        "name": "MINUTES",
+        "check": "Number"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 0
   },
-
   "add_user_role": {
-    "version":2,
+    "version": 2,
     "title": "➕ ロール付与",
     "type": "statement",
-    "fields" : [
-      {"kind" : "label", "text":"(ユーザーID"},
-      {"kind" : "value","name":"USER_ID", "check":"String"},
-      {"kind" : "label", "text":"、ロールID"},
-      {"kind" : "value","name":"ROLE_ID", "check":"String"},
-      {"kind" : "label", "text":")"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(ユーザーID"
+      },
+      {
+        "kind": "value",
+        "name": "USER_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、ロールID"
+      },
+      {
+        "kind": "value",
+        "name": "ROLE_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 0
   },
-
   "remove_user_role": {
-    "version":2,
+    "version": 2,
     "title": "➖ ロール剥奪",
     "type": "statement",
-    "fields" : [
-      {"kind" : "label", "text":"(ユーザーID"},
-      {"kind" : "value","name":"USER_ID", "check":"String"},
-      {"kind" : "label", "text":"、ロールID"},
-      {"kind" : "value","name":"ROLE_ID", "check":"String"},
-      {"kind" : "label", "text":")"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(ユーザーID"
+      },
+      {
+        "kind": "value",
+        "name": "USER_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、ロールID"
+      },
+      {
+        "kind": "value",
+        "name": "ROLE_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 0
   },
-
   "create_role": {
-    "version" : "2",
+    "version": "2",
     "title": "🔰 新規ロール作成",
     "type": "statement",
-    "fields" : [
-      {"kind" : "label", "text":"(名前"},
-      {"kind" : "value","name":"NAME", "check":"String"},
-      {"kind" : "label", "text":")"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(名前"
+      },
+      {
+        "kind": "value",
+        "name": "NAME",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 0
   },
-
   "change_nickname": {
-    "version" : "2",
+    "version": "2",
     "title": "🏷️ ニックネーム変更",
     "type": "statement",
-    "fields" : [
-      {"kind" : "label", "text":"(ユーザーID"},
-      {"kind" : "value","name":"USER_ID", "check":"String"},
-      {"kind" : "label", "text":"、新しいニックネーム"},
-      {"kind" : "value","name":"NAME", "check":"String"},
-      {"kind" : "label", "text":")"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "(ユーザーID"
+      },
+      {
+        "kind": "value",
+        "name": "USER_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、新しいニックネーム"
+      },
+      {
+        "kind": "value",
+        "name": "NAME",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 0
   },
-
   "lists_append_to": {
-    "version":2,
+    "version": 2,
     "title": "",
     "type": "statement",
-    "fields" : [
-      {"kind" : "label", "text":"リスト"},
-      {"kind" : "value","name":"LIST", "check":"Array"},
-      {"kind" : "label", "text":"に項目"},
-      {"kind" : "value","name":"ITEM", "check":null},
-      {"kind" : "label", "text":"を追加"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "リスト"
+      },
+      {
+        "kind": "value",
+        "name": "LIST",
+        "check": "Array"
+      },
+      {
+        "kind": "label",
+        "text": "に項目"
+      },
+      {
+        "kind": "value",
+        "name": "ITEM",
+        "check": null
+      },
+      {
+        "kind": "label",
+        "text": "を追加"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 210
   },
-
   "random_choice": {
-    "version":2,
+    "version": 2,
     "title": "",
     "type": "output",
-    "fields" : [
-      {"kind" : "label", "text":"🎲 リスト"},
-      {"kind" : "value","name":"LIST", "check":"Array"},
-      {"kind" : "label", "text":"からランダムに1つ選ぶ"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "🎲 リスト"
+      },
+      {
+        "kind": "value",
+        "name": "LIST",
+        "check": "Array"
+      },
+      {
+        "kind": "label",
+        "text": "からランダムに1つ選ぶ"
+      }
     ],
     "output": null,
     "color": 230
   },
-
   "random_integer": {
-    "version":2,
+    "version": 2,
     "title": "",
     "type": "output",
-    "fields" : [
-      {"kind" : "label", "text":"🎲 乱数(最小"},
-      {"kind" : "value","name":"FROM", "check":"Number"},
-      {"kind" : "label", "text":"～最大"},
-      {"kind" : "value","name":"TO", "check":"Number"},
-      {"kind" : "label", "text":")"}
+    "fields": [
+      {
+        "kind": "label",
+        "text": "🎲 乱数(最小"
+      },
+      {
+        "kind": "value",
+        "name": "FROM",
+        "check": "Number"
+      },
+      {
+        "kind": "label",
+        "text": "～最大"
+      },
+      {
+        "kind": "value",
+        "name": "TO",
+        "check": "Number"
+      },
+      {
+        "kind": "label",
+        "text": ")"
+      }
     ],
     "output": "Number",
     "color": 230
   },
-
   "text_replace": {
-    "version":2,
+    "version": 2,
     "title": "",
     "type": "output",
-    "inline": ["TEXT", "FROM", "TO"],
-    "fields": [
-      { "kind": "label", "text": "テキスト " },
-      {"kind":"value","name":"TEXT", "check":"String"},
-      { "kind": "label", "text": "の中の" },
-      {"kind":"value","name":"FROM", "check":"String"},
-      { "kind": "label", "text": "を" },
-      {"kind":"value","name":"TO", "check":"String"},
-      { "kind": "label", "text": "に置換" }
+    "inline": [
+      "TEXT",
+      "FROM",
+      "TO"
     ],
-
+    "fields": [
+      {
+        "kind": "label",
+        "text": "テキスト "
+      },
+      {
+        "kind": "value",
+        "name": "TEXT",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "の中の"
+      },
+      {
+        "kind": "value",
+        "name": "FROM",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "を"
+      },
+      {
+        "kind": "value",
+        "name": "TO",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "に置換"
+      }
+    ],
     "output": "String",
     "color": 160
   },
-
   "text_charAt": {
     "version": 2,
     "type": "output",
     "fields": [
-      { "kind": "label", "text": "テキスト" },
-      { "kind": "value", "name": "VALUE", "check": "String" },
-      { "kind": "label", "text": " の " },
+      {
+        "kind": "label",
+        "text": "テキスト"
+      },
+      {
+        "kind": "value",
+        "name": "VALUE",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": " の "
+      },
       {
         "name": "WHERE",
         "inputType": "dropdown",
         "options": [
-          ["先頭から", "FROM_START"],
-          ["末尾から", "FROM_END"],
-          ["最初", "FIRST"],
-          ["最後", "LAST"]
+          [
+            "先頭から",
+            "FROM_START"
+          ],
+          [
+            "末尾から",
+            "FROM_END"
+          ],
+          [
+            "最初",
+            "FIRST"
+          ],
+          [
+            "最後",
+            "LAST"
+          ]
         ]
       },
-      { "kind": "value", "name": "AT", "check": "Number" },
-      { "kind": "label", "text": " 文字" }
+      {
+        "kind": "value",
+        "name": "AT",
+        "check": "Number"
+      },
+      {
+        "kind": "label",
+        "text": " 文字"
+      }
     ],
     "output": "String",
     "color": 160
   },
-
   "controls_if": {
     "title": "もし〜なら",
     "type": "statement",
-    "statements": ["DO0", "DO1", "ELSE"],
+    "statements": [
+      "DO0",
+      "DO1",
+      "ELSE"
+    ],
     "previous": true,
     "next": true,
     "color": 210
   },
   "on_reaction_add": {
+    "version": "2",
     "title": "⭐ リアクションが付いたとき",
     "type": "statement",
     "fields": [
-      { "name": "MESSAGE_ID", "inputType": "text", "default": "" },
-      { "name": "EMOJI", "inputType": "text", "default": "" }
+      {
+        "kind": "label",
+        "text": "(メッセージID"
+      },
+      {
+        "kind": "value",
+        "name": "MESSAGE_ID",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、リアクション"
+      },
+      {
+        "kind": "value",
+        "name": "EMOJI",
+        "inputType": "text",
+        "default": ""
+      }
     ],
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 30
   },
-
   "send_button_message": {
+    "version": "2",
     "title": "🔘 ボタン付きメッセージ送信",
     "type": "statement",
-    "inputs": [
-      { "name": "MESSAGE", "check": "String" }
-    ],
     "fields": [
-      { "name": "LABEL", "inputType": "text", "default": "Click Me" },
-      { "name": "CUSTOM_ID", "inputType": "text", "default": "button_1" }
+      {"kind": "\n"},
+      {
+        "kind": "label",
+        "text": "(メッセージ"
+        
+      },
+      {
+        "kind": "value",
+        "name": "MESSAGE",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、ボタン名"
+      },
+      {
+        "name": "LABEL",
+        "inputType": "text",
+        "default": "Click Me",
+        "check": "String"
+      },
+      {
+        "kind": "label",
+        "text": "、ボタンID"
+      },
+      {
+        "name": "CUSTOM_ID",
+        "inputType": "text",
+        "default": "button_1"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 350
   },
-
   "on_button_click": {
     "title": "🖱️ ボタンがクリックされたとき",
     "type": "statement",
     "fields": [
-      { "name": "CUSTOM_ID", "inputType": "text", "default": "button_1" }
+      {
+        "name": "CUSTOM_ID",
+        "inputType": "text",
+        "default": "button_1"
+      }
     ],
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 350
   },
-
   "show_modal": {
     "title": "📝 モーダル(入力フォーム)を表示",
     "type": "statement",
     "fields": [
-      { "name": "TITLE", "inputType": "text", "default": "My Form" },
-      { "name": "CUSTOM_ID", "inputType": "text", "default": "modal_1" },
-      { "name": "LABEL1", "inputType": "text", "default": "Name" },
-      { "name": "LABEL2", "inputType": "text", "default": "" }
+      {
+        "name": "TITLE",
+        "inputType": "text",
+        "default": "My Form"
+      },
+      {
+        "name": "CUSTOM_ID",
+        "inputType": "text",
+        "default": "modal_1"
+      },
+      {
+        "name": "LABEL1",
+        "inputType": "text",
+        "default": "Name"
+      },
+      {
+        "name": "LABEL2",
+        "inputType": "text",
+        "default": ""
+      }
     ],
     "previous": true,
     "next": true,
     "color": 350
   },
-
   "on_modal_submit": {
     "title": "📩 モーダルが送信されたとき",
     "type": "statement",
     "fields": [
-      { "name": "CUSTOM_ID", "inputType": "text", "default": "modal_1" }
+      {
+        "name": "CUSTOM_ID",
+        "inputType": "text",
+        "default": "modal_1"
+      }
     ],
-    "statements": ["DO"],
-    "statementLabels": { "DO": "実行する処理" },
+    "statements": [
+      "DO"
+    ],
+    "statementLabels": {
+      "DO": "実行する処理"
+    },
     "previous": true,
     "next": true,
     "color": 350
   },
-
   "get_input_value": {
     "title": "入力項目の値を取得",
     "type": "output",
@@ -829,63 +1471,87 @@
         "name": "INDEX",
         "inputType": "dropdown",
         "options": [
-          ["1つ目", "0"],
-          ["2つ目", "1"]
+          [
+            "1つ目",
+            "0"
+          ],
+          [
+            "2つ目",
+            "1"
+          ]
         ]
       }
     ],
     "output": "String",
     "color": 350
   },
-
   "procedures_defnoreturn": {
     "title": "関数を作成",
     "type": "statement",
-    "statements": ["STACK"],
+    "statements": [
+      "STACK"
+    ],
     "fields": [
-      { "name": "NAME", "inputType": "text", "default": "my_func" }
+      {
+        "name": "NAME",
+        "inputType": "text",
+        "default": "my_func"
+      }
     ],
     "previous": false,
     "next": false,
     "color": 290
   },
-
   "procedures_defreturn": {
     "title": "戻り値付き関数を作成",
     "type": "statement",
-    "statements": ["STACK"],
+    "statements": [
+      "STACK"
+    ],
     "fields": [
-      { "name": "NAME", "inputType": "text", "default": "my_func" }
+      {
+        "name": "NAME",
+        "inputType": "text",
+        "default": "my_func"
+      }
     ],
     "inputs": [
-      { "name": "RETURN", "check": null }
+      {
+        "name": "RETURN",
+        "check": null
+      }
     ],
     "previous": false,
     "next": false,
     "color": 290
   },
-
   "procedures_callnoreturn": {
     "title": "関数を呼び出す",
     "type": "statement",
     "fields": [
-      { "name": "NAME", "inputType": "text", "default": "my_func" }
+      {
+        "name": "NAME",
+        "inputType": "text",
+        "default": "my_func"
+      }
     ],
     "previous": true,
     "next": true,
     "color": 290
   },
-
   "procedures_callreturn": {
     "title": "関数を呼び出して値を得る",
     "type": "output",
     "fields": [
-      { "name": "NAME", "inputType": "text", "default": "my_func" }
+      {
+        "name": "NAME",
+        "inputType": "text",
+        "default": "my_func"
+      }
     ],
     "output": null,
     "color": 290
   },
-
   "lists_create_with": {
     "title": "リストを作成",
     "type": "output",
@@ -893,17 +1559,18 @@
     "output": "Array",
     "color": 210
   },
-
   "lists_length": {
     "title": "リストの長さ",
     "type": "output",
     "inputs": [
-      { "name": "VALUE", "check": "Array" }
+      {
+        "name": "VALUE",
+        "check": "Array"
+      }
     ],
     "output": "Number",
     "color": 210
   },
-
   "lists_getIndex": {
     "title": "リストから取得",
     "type": "output",
@@ -912,30 +1579,56 @@
         "name": "MODE",
         "inputType": "dropdown",
         "options": [
-          ["取得", "GET"],
-          ["取得して削除", "GET_REMOVE"],
-          ["削除", "REMOVE"]
+          [
+            "取得",
+            "GET"
+          ],
+          [
+            "取得して削除",
+            "GET_REMOVE"
+          ],
+          [
+            "削除",
+            "REMOVE"
+          ]
         ]
       },
       {
         "name": "WHERE",
         "inputType": "dropdown",
         "options": [
-          ["先頭から", "FROM_START"],
-          ["末尾から", "FROM_END"],
-          ["最初", "FIRST"],
-          ["最後", "LAST"]
+          [
+            "先頭から",
+            "FROM_START"
+          ],
+          [
+            "末尾から",
+            "FROM_END"
+          ],
+          [
+            "最初",
+            "FIRST"
+          ],
+          [
+            "最後",
+            "LAST"
+          ]
         ]
       }
     ],
     "inputs": [
-      { "name": "VALUE", "check": "Array" },
-      { "name": "AT", "check": "Number" }
+      {
+        "name": "VALUE",
+        "check": "Array"
+      },
+      {
+        "name": "AT",
+        "check": "Number"
+      }
     ],
     "output": null,
     "color": 210
   },
-
   "lists_setIndex": {
     "title": "リストに設定/挿入",
     "type": "statement",
@@ -944,25 +1637,52 @@
         "name": "MODE",
         "inputType": "dropdown",
         "options": [
-          ["設定", "SET"],
-          ["挿入", "INSERT"]
+          [
+            "設定",
+            "SET"
+          ],
+          [
+            "挿入",
+            "INSERT"
+          ]
         ]
       },
       {
         "name": "WHERE",
         "inputType": "dropdown",
         "options": [
-          ["先頭から", "FROM_START"],
-          ["末尾から", "FROM_END"],
-          ["最初", "FIRST"],
-          ["最後", "LAST"]
+          [
+            "先頭から",
+            "FROM_START"
+          ],
+          [
+            "末尾から",
+            "FROM_END"
+          ],
+          [
+            "最初",
+            "FIRST"
+          ],
+          [
+            "最後",
+            "LAST"
+          ]
         ]
       }
     ],
     "inputs": [
-      { "name": "LIST", "check": "Array" },
-      { "name": "AT", "check": "Number" },
-      { "name": "VALUE", "check": null }
+      {
+        "name": "LIST",
+        "check": "Array"
+      },
+      {
+        "name": "AT",
+        "check": "Number"
+      },
+      {
+        "name": "VALUE",
+        "check": null
+      }
     ],
     "previous": true,
     "next": true,
