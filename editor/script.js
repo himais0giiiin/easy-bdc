@@ -467,7 +467,7 @@ const initializeApp = () => {
   downloadCodeBtn.addEventListener("click", () => {
     const zip = new JSZip();
     zip.file("bot-project.py", codeOutput.textContent);
-    zip.file(".env", "TOKEN=YOUR_TOKEN\n");
+    zip.file(".env", "DISCORD_TOKEN=★ここを自分のTokenに置き換えてください★\n");
     zip.generateAsync({ type: "blob" }).then((blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
