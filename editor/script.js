@@ -463,6 +463,20 @@ const initializeApp = () => {
       lucide.createIcons();
     }, 2000);
   });
+  
+  downloadCodeBtn.addEventListener("click", () => {
+    const zip = new JSZip();
+    zip.file("bot-project.py", codeOutput.textContent);
+    zip.file(".env", "TOKEN=YOUR_TOKEN\n");
+    zip.generateAsync({ type: "blob" }).then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bot-project.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  });
 };
 
 window.onload = initializeApp;

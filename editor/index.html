@@ -340,6 +340,9 @@
                         <button id="copyCodeBtn" class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-lg shadow-lg bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 backdrop-blur-sm transition-all active:scale-95">
                             <i data-lucide="copy" class="w-3.5 h-3.5"></i> コピー
                         </button>
+                        <button id="downloadCodeBtn" class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-lg shadow-lg bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 backdrop-blur-sm transition-all active:scale-95">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i> ダウンロード
+                        </button>
                     </div>
                     <pre id="codeOutput" class="p-5 text-sm font-mono tab-4 bg-[#0f172a] text-[#e2e8f0] overflow-x-auto min-h-[300px]"></pre>
                 </div>
@@ -352,6 +355,7 @@
             </div>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
