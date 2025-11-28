@@ -227,7 +227,9 @@ const initializeApp = () => {
   const closeModalBtn = document.getElementById('closeModalBtn');
   const codeOutput = document.getElementById('codeOutput');
   const copyCodeBtn = document.getElementById('copyCodeBtn');
-
+  // ダウンロードボタン
+  const downloadCodeBtn = document.getElementById("downloadCodeBtn");
+  
   const importBtn = document.getElementById('importBtn');
   const exportBtn = document.getElementById('exportBtn');
   const importInput = document.getElementById('importInput');
