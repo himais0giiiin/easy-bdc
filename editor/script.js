@@ -151,7 +151,9 @@ import math
 import json
 import os
 import logging
+import edbb
 
+edbb.register(generated_at="${new Date().toISOString()}")
 # ロギング設定 (Logging Setup)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -161,7 +163,7 @@ intents.members = True
 intents.voice_states = True
 
 # Botの作成
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = edbb.Bot(command_prefix='!', intents=intents)
 
 # グローバルエラーハンドラー
 @bot.event
