@@ -271,80 +271,100 @@ const applyMobileToolboxIcons = (toolboxEl) => {
   });
 };
 
-// --- Code Generation & UI Sync ---
-const generatePythonCode = () => {
-  if (!workspace) return '';
-  let rawCode = Blockly.Python.workspaceToCode(workspace);
+const escapePyString = (value) =>
+  String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+const extractEventName = (line) => line.split(':').slice(1).join(':').trim();
 
-  // --- Event Handlers for Dynamic Components ---
+const extractInteractionEvents = (rawCode) => {
+  const lines = rawCode.split('\n');
+  let filteredLines = [];
   let componentEvents = '';
   let modalEvents = '';
 
-  // Parse raw code to extract event handlers
-  const lines = rawCode.split('\n');
-  let filteredLines = [];
-  let currentEventName = null;
-
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+    const line = lines[i];
     if (line.includes('# BUTTON_EVENT:')) {
-      currentEventName = line.split(':')[1].trim();
-      componentEvents += `            if interaction.data.get('custom_id') == '${currentEventName}':\n                await on_button_${currentEventName}(interaction)\n`;
-      filteredLines.push(line); // Keep definition
+      const currentEventName = extractEventName(line);
+      const escapedEventName = escapePyString(currentEventName);
+      componentEvents +=
+        `            if interaction.data.get('custom_id') == '${escapedEventName}':\n` +
+        `                await on_button_${currentEventName}(interaction)\n`;
+      filteredLines.push(line);
     } else if (line.includes('# MODAL_EVENT:')) {
-      currentEventName = line.split(':')[1].trim();
-      modalEvents += `            if interaction.data.get('custom_id') == '${currentEventName}':\n                await on_modal_${currentEventName}(interaction)\n`;
+      const currentEventName = extractEventName(line);
+      const escapedEventName = escapePyString(currentEventName);
+      modalEvents +=
+        `            if interaction.data.get('custom_id') == '${escapedEventName}':\n` +
+        `                await on_modal_${currentEventName}(interaction)\n`;
       filteredLines.push(line);
     } else {
       filteredLines.push(line);
     }
   }
 
-  rawCode = filteredLines.join('\n');
-  
-  const hasComponentEvents = componentEvents.trim().length > 0;
-  const hasModalEvents = modalEvents.trim().length > 0;
+  const cleanedCode = filteredLines.join('\n');
+  return {
+    cleanedCode,
+    componentEvents,
+    modalEvents,
+    hasComponentEvents: componentEvents.trim().length > 0,
+    hasModalEvents: modalEvents.trim().length > 0,
+  };
+};
+
+// --- Code Generation & UI Sync ---
+const generatePythonCode = () => {
+  if (!workspace) return '';
+  const rawCode = Blockly.Python.workspaceToCode(workspace);
+  const {
+    cleanedCode,
+    componentEvents: componentEventsRaw,
+    modalEvents: modalEventsRaw,
+    hasComponentEvents,
+    hasModalEvents,
+  } = extractInteractionEvents(rawCode);
+  let componentEvents = componentEventsRaw;
+  let modalEvents = modalEventsRaw;
+  const bodyCode = cleanedCode;
 
   if (!componentEvents.trim()) componentEvents = '            pass';
   if (!modalEvents.trim()) modalEvents = '            pass';
 
   // --- Dependency Analysis ---
-  const usesJson = rawCode.includes('_load_json_data') || rawCode.includes('_save_json_data') || rawCode.includes('json.');
-  const usesModal = rawCode.includes('EasyModal');
-  const usesRandom = rawCode.includes('random.');
-  const usesAsyncio = rawCode.includes('asyncio.');
-  const usesDatetime = rawCode.includes('datetime.');
-  const usesMath = rawCode.includes('math.');
-  const usesLogging = rawCode.includes('logging.') || usesJson; // JSON helpers use logging
+  const usesJson = bodyCode.includes('_load_json_data') || bodyCode.includes('_save_json_data') || bodyCode.includes('json.');
+  const usesModal = bodyCode.includes('EasyModal');
+  const usesRandom = bodyCode.includes('random.');
+  const usesAsyncio = bodyCode.includes('asyncio.');
+  const usesDatetime = bodyCode.includes('datetime.');
+  const usesMath = bodyCode.includes('math.');
+  const usesLogging = bodyCode.includes('logging.') || usesJson; // JSON helpers use logging
   const needInteractionHandler = hasComponentEvents || hasModalEvents;
 
-  // --- Optimized Boilerplate ---
-  let boilerplate = `
+  // --- Build Imports ---
+  const imports = [
+    'import discord',
+    'from discord import app_commands',
+    'from discord.ext import commands',
+  ];
+  if (needInteractionHandler || usesModal || bodyCode.includes('discord.ui')) imports.push('from discord import ui');
+  if (usesRandom) imports.push('import random');
+  if (usesAsyncio) imports.push('import asyncio');
+  if (usesDatetime) imports.push('import datetime');
+  if (usesMath) imports.push('import math');
+  if (usesJson) {
+    imports.push('import json');
+    imports.push('import os');
+  }
+  if (usesLogging) imports.push('import logging');
+
+  const header = imports.join('\n');
+
+  const fullBoiler = `
 # Easy Discord Bot Builderによって作成されました！ 製作：@himais0giiiin
 # Created with Easy Discord Bot Builder! created by @himais0giiiin!
 # Optimized Version
 
-import discord
-from discord import app_commands
-from discord.ext import commands
-`;
-
-  if (needInteractionHandler || usesModal || rawCode.includes('discord.ui')) {
-    boilerplate += `from discord import ui\n`;
-  }
-  if (usesRandom) boilerplate += `import random\n`;
-  if (usesAsyncio) boilerplate += `import asyncio\n`;
-  if (usesDatetime) boilerplate += `import datetime\n`;
-  if (usesMath) boilerplate += `import math\n`;
-  if (usesJson) {
-      boilerplate += `import json\nimport os\n`;
-  }
-  if (usesLogging) boilerplate += `import logging\n`;
-
-  // Logging Setup
-  if (usesLogging) {
-      boilerplate += `\n# ロギング設定 (Logging Setup)\nlogging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')\n`;
-  }
+${header}
 
   boilerplate += `
 intents = discord.Intents.default()
@@ -413,7 +433,7 @@ ${modalEvents}
 # ----------------------------
 
 # --- ユーザー作成部分 ---
-${rawCode}
+${bodyCode}
 # --------------------------
 
 if __name__ == "__main__":
@@ -427,7 +447,7 @@ if __name__ == "__main__":
     pass
 `;
 
-  return boilerplate.trim();
+  return fullBoiler.trim();
 };
 
 const updateLivePreview = () => {
@@ -644,7 +664,410 @@ const setupListManager = ({ workspace, storage, shareFeature, workspaceContainer
   return { renderListPanel, scheduleListSave };
 };
 
+const indentBlock = (block, spaces = 4) =>
+  block
+    .split('\n')
+    .map((line) => (line.trim() === '' ? '' : `${' '.repeat(spaces)}${line}`))
+    .join('\n');
 
+const addSelfParam = (block) =>
+  block.replace(/async def ([^(]+)\(([^)]*)\)/, (match, name, params) => {
+    const trimmed = params.trim();
+    if (!trimmed) return `async def ${name}(self)`;
+    if (trimmed.startsWith('self')) return `async def ${name}(${trimmed})`;
+    return `async def ${name}(self, ${trimmed})`;
+  });
+
+const convertEventBlock = (block) => {
+  let updated = block.replace('@bot.event', '@commands.Cog.listener()');
+  updated = addSelfParam(updated);
+  updated = updated.replace(/\bbot\./g, 'self.bot.');
+  return updated;
+};
+
+const convertSlashCommandBlock = (block) => {
+  let updated = block.replace('@bot.tree.command', '@app_commands.command');
+  updated = addSelfParam(updated);
+  updated = updated.replace(/\bbot\./g, 'self.bot.');
+  return updated;
+};
+
+const convertPrefixCommandBlock = (block) => {
+  let updated = block.replace('@bot.command', '@commands.command');
+  updated = addSelfParam(updated);
+  updated = updated.replace(/\bbot\./g, 'self.bot.');
+  return updated;
+};
+
+const convertComponentBlock = (block) => {
+  let updated = addSelfParam(block);
+  updated = updated.replace(/\bbot\./g, 'self.bot.');
+  return updated;
+};
+
+const buildInteractionHandler = (componentEvents, modalEvents) => {
+  let componentBody = componentEvents.trim()
+    ? componentEvents.replace(/await on_button_/g, 'await self.on_button_')
+    : '            pass';
+  let modalBody = modalEvents.trim()
+    ? modalEvents.replace(/await on_modal_/g, 'await self.on_modal_')
+    : '            pass';
+
+  return `
+@commands.Cog.listener()
+async def on_interaction(self, interaction):
+    try:
+        if interaction.type == discord.InteractionType.component:
+${componentBody}
+        elif interaction.type == discord.InteractionType.modal_submit:
+${modalBody}
+    except Exception as e:
+        print(f"Interaction Error: {e}")
+`.trim();
+};
+
+const buildImports = (bodyCode, needsInteractionHandler) => {
+  const imports = [
+    'import discord',
+    'from discord import app_commands',
+    'from discord.ext import commands',
+  ];
+  if (needsInteractionHandler || bodyCode.includes('EasyModal') || bodyCode.includes('discord.ui')) {
+    imports.push('from discord import ui');
+  }
+  if (bodyCode.includes('random.')) imports.push('import random');
+  if (bodyCode.includes('asyncio.')) imports.push('import asyncio');
+  if (bodyCode.includes('datetime.')) imports.push('import datetime');
+  if (bodyCode.includes('math.')) imports.push('import math');
+  if (
+    bodyCode.includes('_load_json_data') ||
+    bodyCode.includes('_save_json_data') ||
+    bodyCode.includes('json.')
+  ) {
+    imports.push('import json');
+    imports.push('import os');
+  }
+  if (bodyCode.includes('logging.') || bodyCode.includes('_load_json_data') || bodyCode.includes('_save_json_data')) {
+    imports.push('import logging');
+  }
+  return imports;
+};
+
+const buildSharedModule = (bodyCode) => {
+  const usesJson =
+    bodyCode.includes('_load_json_data') ||
+    bodyCode.includes('_save_json_data') ||
+    bodyCode.includes('json.');
+  const usesModal = bodyCode.includes('EasyModal');
+  const usesLogging = bodyCode.includes('logging.') || usesJson;
+
+  if (!usesJson && !usesModal && !usesLogging) return '';
+
+  let content = `# Shared helpers\n`;
+  if (usesLogging) {
+    content += `import logging\n\n`;
+    content += `logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')\n\n`;
+  }
+  if (usesJson) {
+    content += `import json\nimport os\n\n`;
+    content += `def _load_json_data(filename):\n`;
+    content += `    if not os.path.exists(filename):\n`;
+    content += `        return {}\n`;
+    content += `    try:\n`;
+    content += `        with open(filename, 'r', encoding='utf-8') as f:\n`;
+    content += `            return json.load(f)\n`;
+    content += `    except Exception as e:\n`;
+    content += `        logging.error(f"JSON Load Error: {e}")\n`;
+    content += `        return {}\n\n`;
+    content += `def _save_json_data(filename, data):\n`;
+    content += `    try:\n`;
+    content += `        with open(filename, 'w', encoding='utf-8') as f:\n`;
+    content += `            json.dump(data, f, ensure_ascii=False, indent=4)\n`;
+    content += `    except Exception as e:\n`;
+    content += `        logging.error(f"JSON Save Error: {e}")\n\n`;
+  }
+  if (usesModal) {
+    content += `import discord\n\n`;
+    content += `class EasyModal(discord.ui.Modal):\n`;
+    content += `    def __init__(self, title, custom_id, inputs):\n`;
+    content += `        super().__init__(title=title, timeout=None, custom_id=custom_id)\n`;
+    content += `        for item in inputs:\n`;
+    content += `            self.add_item(discord.ui.TextInput(label=item['label'], custom_id=item['id']))\n`;
+  }
+  return content.trim();
+};
+
+const buildCogFile = (className, blocks, imports, sharedImports = '', preamble = '') => {
+  const body = blocks.map((block) => indentBlock(block)).join('\n\n');
+  const header = `${imports.join('\n')}\n${sharedImports}`.trim();
+  const preambleBlock = preamble ? `${preamble}\n\n` : '';
+  return `
+${header}
+
+${preambleBlock}class ${className}(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+${body}
+
+async def setup(bot):
+    await bot.add_cog(${className}(bot))
+`.trim();
+};
+
+const buildModuleFile = (imports, sharedImports, body, preamble = '') => {
+  const header = `${imports.join('\n')}\n${sharedImports}`.trim();
+  const preambleBlock = preamble ? `${preamble}\n\n` : '';
+  return `
+${header}
+
+${preambleBlock}${body}
+
+async def setup(bot):
+    pass
+`.trim();
+};
+
+const blockCodeToString = (code) => {
+  if (!code) return '';
+  if (Array.isArray(code)) return code[0] || '';
+  return code;
+};
+
+const slugify = (value) => {
+  const base = String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return base || 'group';
+};
+
+const toPascalCase = (value) =>
+  value
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+
+const deriveGroupMeta = (block) => {
+  const type = block?.type || 'group';
+  let kind = 'misc';
+  let label = type;
+
+  if (['on_ready', 'on_message_create', 'on_member_join', 'on_member_remove', 'on_reaction_add'].includes(type)) {
+    kind = 'event';
+  } else if (type === 'on_command_executed') {
+    kind = 'slash';
+  } else if (type === 'prefix_command') {
+    kind = 'prefix';
+  } else if (type === 'on_button_click') {
+    kind = 'button';
+  } else if (type === 'on_modal_submit') {
+    kind = 'modal';
+  }
+
+  if (type === 'on_command_executed' || type === 'prefix_command') {
+    label = block.getFieldValue('COMMAND_NAME') || type;
+  } else if (type === 'on_button_click' || type === 'on_modal_submit') {
+    label = block.getFieldValue('CUSTOM_ID') || type;
+  }
+
+  return { kind, label, type };
+};
+
+const generateSplitPythonFiles = () => {
+  if (!workspace) return {};
+  const topBlocks = workspace.getTopBlocks(true);
+  const topBlockEntries = topBlocks.map((block) => ({
+    block,
+    rawGroup: blockCodeToString(Blockly.Python.blockToCode(block)),
+  }));
+  const rawAll = topBlockEntries.map(({ rawGroup }) => rawGroup).join('\n');
+  const { cleanedCode: allCleaned } = extractInteractionEvents(rawAll);
+
+  const sharedModule = buildSharedModule(allCleaned);
+  const files = { 'cogs/__init__.py': '' };
+  if (sharedModule) files['cogs/shared.py'] = sharedModule;
+
+  const procedureDefs = topBlockEntries
+    .filter(({ block, rawGroup }) => block?.type?.startsWith('procedures_def') && rawGroup?.trim())
+    .map(({ rawGroup }) => rawGroup.trim());
+  const nameCounter = new Map();
+  const cogsToLoad = [];
+
+  const makeUniqueSlug = (base) => {
+    const current = nameCounter.get(base) || 0;
+    nameCounter.set(base, current + 1);
+    return current === 0 ? base : `${base}_${current + 1}`;
+  };
+
+  topBlockEntries.forEach(({ block, rawGroup }) => {
+    if (!rawGroup || !rawGroup.trim()) return;
+    if (block?.type?.startsWith('procedures_def')) {
+      return;
+    }
+
+    const {
+      cleanedCode,
+      componentEvents,
+      modalEvents,
+      hasComponentEvents,
+      hasModalEvents,
+    } = extractInteractionEvents(rawGroup);
+
+    const { kind, label } = deriveGroupMeta(block);
+    const baseSlug = slugify(`${kind}_${label}`);
+    const fileSlug = makeUniqueSlug(baseSlug);
+    const className = `${toPascalCase(fileSlug)}Cog`.replace(/^[0-9]/, 'Cog$&');
+
+    const needsInteractionHandler = hasComponentEvents || hasModalEvents;
+    const imports = buildImports(cleanedCode, needsInteractionHandler);
+    const usesJson =
+      cleanedCode.includes('_load_json_data') ||
+      cleanedCode.includes('_save_json_data') ||
+      cleanedCode.includes('json.');
+    const usesModal = cleanedCode.includes('EasyModal');
+    const sharedSymbols = [];
+    if (usesJson) sharedSymbols.push('_load_json_data', '_save_json_data');
+    if (usesModal) sharedSymbols.push('EasyModal');
+    const sharedImports =
+      sharedModule && sharedSymbols.length
+        ? `from .shared import ${sharedSymbols.join(', ')}`
+        : '';
+
+    let fileContent = '';
+    const procedurePreamble = procedureDefs.length ? procedureDefs.join('\n\n') : '';
+
+    if (kind === 'event') {
+      fileContent = buildCogFile(
+        className,
+        [convertEventBlock(cleanedCode)],
+        imports,
+        sharedImports,
+        procedurePreamble,
+      );
+    } else if (kind === 'slash') {
+      fileContent = buildCogFile(
+        className,
+        [convertSlashCommandBlock(cleanedCode)],
+        imports,
+        sharedImports,
+        procedurePreamble,
+      );
+    } else if (kind === 'prefix') {
+      fileContent = buildCogFile(
+        className,
+        [convertPrefixCommandBlock(cleanedCode)],
+        imports,
+        sharedImports,
+        procedurePreamble,
+      );
+    } else if (kind === 'button' || kind === 'modal') {
+      const blocks = [];
+      if (needsInteractionHandler) {
+        blocks.push(buildInteractionHandler(componentEvents, modalEvents));
+      }
+      blocks.push(convertComponentBlock(cleanedCode));
+      fileContent = buildCogFile(className, blocks, imports, sharedImports, procedurePreamble);
+    } else {
+      fileContent = buildModuleFile(imports, sharedImports, cleanedCode.trim(), procedurePreamble);
+    }
+
+    const filePath = `cogs/${fileSlug}.py`;
+    files[filePath] = fileContent;
+    cogsToLoad.push(filePath.replace('cogs/', 'cogs.').replace('.py', ''));
+  });
+
+  const botFile = `
+# Easy Discord Bot Builder - Split Cogs Version
+
+import discord
+from discord.ext import commands
+
+intents = discord.Intents.default()
+intents.message_content = True 
+intents.members = True 
+intents.voice_states = True
+
+class EasyBot(commands.Bot):
+    async def setup_hook(self):
+        for ext in ${JSON.stringify(cogsToLoad)}:
+            await self.load_extension(ext)
+
+bot = EasyBot(command_prefix='!', intents=intents)
+
+if __name__ == "__main__":
+    print('\\x1b[31m!!!!Warning!!!! If you have not set a token, please set the token in the "TOKEN" section at the end of the code before execution.\\x1b[0m')
+    bot.run('TOKEN')
+`.trim();
+
+  files['bot.py'] = botFile;
+  return files;
+};
+
+const downloadTextFile = (filename, content) => {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const renderSplitFiles = (files) => {
+  const container = document.getElementById('splitFileList');
+  container.innerHTML = '';
+  Object.entries(files).forEach(([path, content]) => {
+    if (content == null) return;
+    const item = document.createElement('div');
+    item.className =
+      'rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden';
+    item.innerHTML = `
+      <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+        <div class="text-xs font-mono text-slate-600 dark:text-slate-300">${path}</div>
+        <div class="flex items-center gap-2">
+          <button class="splitCopyBtn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800" data-path="${path}">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy
+          </button>
+          <button class="splitDownloadBtn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white" data-path="${path}">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> DL
+          </button>
+        </div>
+      </div>
+      <pre class="p-4 text-xs font-mono bg-[#0f172a] text-[#e2e8f0] overflow-x-auto"></pre>
+    `;
+    const pre = item.querySelector('pre');
+    if (pre) pre.textContent = content;
+    container.appendChild(item);
+  });
+
+  container.querySelectorAll('.splitCopyBtn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const path = btn.getAttribute('data-path');
+      if (!path || !files[path]) return;
+      navigator.clipboard.writeText(files[path]);
+      btn.textContent = 'Copied';
+      setTimeout(() => {
+        btn.innerHTML = '<i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy';
+        lucide.createIcons();
+      }, 1200);
+    });
+  });
+
+  container.querySelectorAll('.splitDownloadBtn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const path = btn.getAttribute('data-path');
+      if (!path || !files[path]) return;
+      const safeName = path.replace(/\//g, '__');
+      downloadTextFile(safeName, files[path]);
+    });
+  });
+
+  lucide.createIcons();
+};
 
 const initializeApp = () => {
   lucide.createIcons();
@@ -662,6 +1085,10 @@ const initializeApp = () => {
   const closeModalBtn = document.getElementById('closeModalBtn');
   const codeOutput = document.getElementById('codeOutput');
   const copyCodeBtn = document.getElementById('copyCodeBtn');
+  const splitCodeBtn = document.getElementById('splitCodeBtn');
+  const splitCodeModal = document.getElementById('splitCodeModal');
+  const splitModalClose = document.getElementById('splitModalClose');
+  const splitDownloadAllBtn = document.getElementById('splitDownloadAllBtn');
 
   const importBtn = document.getElementById('importBtn');
   const exportBtn = document.getElementById('exportBtn');
@@ -974,12 +1401,43 @@ const initializeApp = () => {
     codeModal.classList.add('show-modal');
   });
 
+  const openSplitModal = () => {
+    if (!splitCodeModal) return;
+    const files = generateSplitPythonFiles();
+    renderSplitFiles(files);
+    splitCodeModal.classList.remove('hidden');
+    splitCodeModal.classList.add('flex');
+    void splitCodeModal.offsetWidth;
+    splitCodeModal.classList.add('show-modal');
+  };
+
+  splitCodeBtn?.addEventListener('click', () => {
+    openSplitModal();
+  });
+
   closeModalBtn.addEventListener('click', () => {
     codeModal.classList.remove('show-modal');
     setTimeout(() => {
       codeModal.classList.remove('flex');
       codeModal.classList.add('hidden');
     }, 300); // Wait for transition
+  });
+
+  splitModalClose?.addEventListener('click', () => {
+    splitCodeModal.classList.remove('show-modal');
+    setTimeout(() => {
+      splitCodeModal.classList.remove('flex');
+      splitCodeModal.classList.add('hidden');
+    }, 300);
+  });
+
+  splitDownloadAllBtn?.addEventListener('click', () => {
+    const files = generateSplitPythonFiles();
+    Object.entries(files).forEach(([path, content]) => {
+      if (content == null) return;
+      const safeName = path.replace(/\//g, '__');
+      downloadTextFile(safeName, content);
+    });
   });
 
   copyCodeBtn.addEventListener('click', () => {
