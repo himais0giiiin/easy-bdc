@@ -6,8 +6,8 @@
 
 - `index.html` - ランディングページ（トップページ）
 - `editor/index.html` - エディタ本体（Blockly + UI）
-- `editor/script.js` - Blockly ワークスペース設定や UI ロジック
-- `editor/blocks.js` - カスタム Blockly ブロック定義（Bot ロジック用ブロック）
+- `editor/script.js` - エントリーポイント (内部ロジックは `editor/core/` に分割済)
+- `editor/blocks/index.js` - カスタム Blockly ブロック定義のエントリーポイント (各ブロックロジックは同ディレクトリ内に分割済)
 - `index.ts` - Cloudflare Worker の簡易ハンドラ（デプロイ用）
 - `wrangler.toml` - Workers 設定
 - `README.md`, `LICENSE` - プロジェクト説明とライセンス
@@ -26,8 +26,8 @@
 開発は必ず静的サーバで動作させながら行ってください。  
 CORF エラーで読み込みがうまく行かないことがあります。
 
-- UI の調整: `editor/index.html` / `editor/style.css` / `editor/script.js`
-- ブロック追加・変更: `editor/blocks.js`（ブロック定義）
+- UI の調整: `editor/index.html` / `editor/style.css` / `editor/core/ui.js` など
+- ブロック追加・変更: `editor/blocks/` 配下の各カテゴリファイル（ブロック定義）
 - カスタムコード生成（Python など）: Blockly の generator 関連の実装を確認・追加
 
 変更を行ったらブラウザをリロードして動作を確認してください。
@@ -36,7 +36,7 @@ CORF エラーで読み込みがうまく行かないことがあります。
 
 ## 新しいブロックを追加する手順（サンプル）
 
-1. `editor/blocks.js` にブロック定義を追加します。既存の `Blockly.Blocks['...']` の書き方に倣ってください。
+1. `editor/blocks/` 配下の適切なカテゴリファイル（または新規ファイル）にブロック定義を追加します。既存の `Blockly.Blocks['...']` の書き方に倣ってください。追加後は `editor/blocks/index.js` で読み込まれるようにします。
 
 2. （必要なら）Blockly のコード生成ロジックを追加します。Python 出力を使う場合は `Blockly.Python.forBlock['your_block'] = function(block) { ... }` のように定義します。
 
@@ -44,12 +44,12 @@ CORF エラーで読み込みがうまく行かないことがあります。
 
 ヒント:
 
-- ブロックは「見た目（editor/blocks.js）」と「コード生成（Blockly.Python / 他）」の両方を用意する必要があります。
+- ブロックは「見た目」と「コード生成（Blockly.Python / 他）」の両方を用意する必要があります。
 - 既存ブロックを参考にすれば導入が簡単です。
 
 ## 永続化とワークスペース
 
-`editor/script.js` 内で `STORAGE_KEY` のようなキーを使ってワークスペース状態を保存しています。ブラウザの `localStorage` を使う設計になっているため、保存・復元ロジックを変更する場合は `editor/script.js` を編集してください。
+`editor/script.js`（あるいは `editor/storage.js` 等）内で `STORAGE_KEY` のようなキーを使ってワークスペース状態を保存しています。ブラウザの `localStorage` を使う設計になっているため、保存・復元ロジックを変更する場合は該当ファイルを編集してください。
 
 ## 貢献方法
 

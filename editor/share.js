@@ -439,9 +439,9 @@ class ShareHistoryManager {
         window.history.back();
         return;
       }
-      this.restoreShareHistoryView();
+      void this.restoreShareHistoryView();
     } else if (mode === 'edit-view') {
-      this.restoreEditingHistoryView();
+      void this.restoreEditingHistoryView();
     }
   }
 
@@ -451,7 +451,7 @@ class ShareHistoryManager {
     // 履歴経由で戻った場合は常に閲覧ビューとして再読込（自動保存を防ぐ）
     this.historyEditEntryCreated = false;
     this.historyEditSnapshot = '';
-    this.restoreShareHistoryView({ silent: true, skipSnapshot: true });
+    void this.restoreShareHistoryView({ silent: true, skipSnapshot: true });
   }
 
   wasHistoryNavigation(event) {
@@ -478,7 +478,7 @@ class ShareHistoryManager {
   }
 
   // 閲覧ビューへ戻る際に共有データを読み込み直す
-  restoreShareHistoryView({ silent = false, skipSnapshot = false } = {}) {
+  async restoreShareHistoryView({ silent = false, skipSnapshot = false } = {}) {
     if (!this.initialShareEncoded) return;
     if (!skipSnapshot) {
       const snapshot = this.captureEditingSnapshot();
@@ -487,7 +487,7 @@ class ShareHistoryManager {
       }
     }
     try {
-      this.importEncodedPayload(this.initialShareEncoded);
+      await this.importEncodedPayload(this.initialShareEncoded);
       this.viewStateController?.setMode(true);
       if (!silent) {
         this.statusNotifier?.show('共有ビューを再読込しました', 'info');
@@ -501,29 +501,33 @@ class ShareHistoryManager {
   }
 
   // 編集ビューへ進む際に保存済みスナップショットを復元
-  restoreEditingHistoryView() {
+  async restoreEditingHistoryView() {
     if (this.historyEditSnapshot) {
       try {
-        this.importEncodedPayload(this.historyEditSnapshot);
+        await this.importEncodedPayload(this.historyEditSnapshot);
       } catch (error) {
         console.error('Failed to restore editing workspace from snapshot', error);
         this.statusNotifier?.show('編集内容の復元に失敗しました', 'error');
+        return false;
       }
     }
     this.viewStateController?.setMode(false);
+    // 復元した編集内容をローカル保存へ反映する
+    this.storage?.save?.();
     this.statusNotifier?.show('編集ビューへ戻りました', 'info');
     this.skipShareViewOnBack = true;
+    return true;
   }
 
   // storage へ Minified データを流し込む共通処理
-  importEncodedPayload(encoded) {
+  async importEncodedPayload(encoded) {
     if (!encoded) {
       throw new Error('ENCODE_MISSING');
     }
     if (!this.storage || typeof this.storage.importMinified !== 'function') {
       throw new Error('STORAGE_NOT_READY');
     }
-    if (!this.storage.importMinified(encoded)) {
+    if (!await this.storage.importMinified(encoded)) {
       throw new Error('LOAD_FAILED');
     }
   }
@@ -893,6 +897,8 @@ class ShareImportModalController {
           this.historyManager?.beginEditingTransition?.() ?? false; // pushState 成功時はURLを書き換え済み
         this.pendingShareEncoded = '';
         this.viewStateController?.setMode(false);
+        // 共有読込中はイベント抑止で自動保存が走らないため、編集開始時に明示的に保存する
+        this.storage?.save?.();
         if (!historyHandled) {
           this.cleanupShareQuery();
         }

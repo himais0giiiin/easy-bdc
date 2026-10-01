@@ -51,7 +51,7 @@
 
 /* 基本設定 & フォント */
 body {
-  font-family: "Plus Jakarta Sans", "Noto Sans JP", sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
   background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
   background-size: 24px 24px;
 }
@@ -71,20 +71,28 @@ body {
 }
 
 #blocklyDiv {
-  flex-grow: 1;
+  width: 100%;
+  flex-grow: 0;
+  flex-shrink: 0;
   height: 100%;
   position: relative;
   z-index: 10;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1), flex-basis 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #liveCodeArea {
   width: 0;
+  flex-grow: 0;
+  flex-shrink: 0;
   height: 100%;
   background-color: #f8fafc;
   color: #0f172a;
   overflow: hidden;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  transition:
+    width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    flex-basis 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
   opacity: 0;
   display: flex;
   flex-direction: column;
@@ -112,12 +120,12 @@ body {
 .split-view #liveCodeArea {
   width: 45%;
   opacity: 1;
-  flex-grow: 1;
+  flex-grow: 0;
   box-shadow: inset 10px 0 20px -10px rgba(0, 0, 0, 0.5);
 }
 
 #codePreviewContent {
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   line-height: 1.6;
   padding: 1.5rem;
@@ -169,9 +177,10 @@ body {
 /* --- Blockly Toolbox Styling Fixes --- */
 
 .blocklyText {
-  font-family: "Plus Jakarta Sans", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif !important;
+  font-family:
+    'Plus Jakarta Sans', 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic',
+    'Meiryo', sans-serif !important;
 }
-
 
 /* ツールボックス全体の背景など */
 .blocklyToolboxDiv {
@@ -211,7 +220,7 @@ body {
 
 /* カテゴリラベルのスタイル */
 .blocklyTreeLabel {
-  font-family: "Plus Jakarta Sans", "Noto Sans JP", sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
   font-weight: 600;
   font-size: 0.85rem;
   color: #475569;
@@ -298,7 +307,26 @@ html.is-mobile .blocklyTreeLabel {
   font-size: 1rem;
   margin-left: 0;
   letter-spacing: 0.02em;
-  text-align: center;
+}
+
+/* Search bar adjustment for mobile/collapsed toolbox */
+html.is-mobile #blockSearchContainer {
+  padding: 6px 4px;
+}
+
+html.is-mobile #blockSearchInput {
+  padding-left: 2rem !important;
+}
+
+html.is-mobile #blockSearchInput::placeholder {
+  color: transparent;
+  opacity: 0;
+}
+
+/* Hide search bar when toolbox is hidden (via pin button) */
+#workspace-container:has(.blocklyToolboxDiv[style*='display: none']) #blockSearchContainer,
+#workspace-container:has(.blocklyToolboxDiv.hidden) #blockSearchContainer {
+  display: none !important;
 }
 
 html.is-mobile .blocklyFlyout {
@@ -310,7 +338,9 @@ html.is-mobile .blocklyFlyout {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-backdrop.show-modal {
@@ -347,8 +377,21 @@ html.is-mobile .blocklyFlyout {
   padding: 0 !important;
 }
 
+/* コード生成モーダル本文 (.hljs のリセットより優先し、ライト/ダーク両方で読みやすくする) */
+#codeOutput {
+  padding: 1.25rem !important;
+  background: #ffffff !important;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.dark #codeOutput {
+  background: #0f172a !important;
+}
+
 /* Tailwind CSSの仕様によってBlocklyのSVG非表示設定が上書きされるのを防ぐ */
-svg[display="none"] {
+svg[display='none'] {
   display: none !important;
 }
 
@@ -362,6 +405,78 @@ svg[display="none"] {
 .share-view-mode .blocklyFlyout,
 .share-view-mode .blocklyFlyoutBackground {
   display: none !important;
+}
+
+/* Compact desktop header for low-height or narrow desktop windows (e.g. 1080x675, 1280x800) */
+@media (min-width: 768px) and ((max-width: 1360px) or (max-height: 860px)) {
+  .glass-header {
+    gap: 10px;
+    padding: 10px 14px !important;
+  }
+
+  .glass-header > .flex.items-center.gap-4 {
+    min-width: 0;
+    gap: 10px !important;
+  }
+
+  .glass-header h1 {
+    font-size: 1.35rem;
+  }
+
+  #headerActions {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  #headerActions::-webkit-scrollbar {
+    display: none;
+  }
+
+  #headerActions > * {
+    flex-shrink: 0;
+  }
+
+  #projectTitleField {
+    width: 180px !important;
+    max-width: 180px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  #projectTitleField label {
+    display: none !important;
+  }
+
+  #layoutBlockBtn,
+  #layoutSplitBtn {
+    padding: 0.4rem 0.55rem !important;
+  }
+
+  #layoutBlockBtn span,
+  #layoutSplitBtn span,
+  #shareBtn span,
+  #runBotBtn span,
+  #showCodeBtn span,
+  #pluginBtn span {
+    display: none !important;
+  }
+
+  #shareBtn,
+  #runBotBtn,
+  #showCodeBtn,
+  #pluginBtn {
+    margin-left: 0.35rem !important;
+    padding: 0.65rem 0.75rem !important;
+    min-width: 44px;
+    white-space: nowrap;
+    writing-mode: horizontal-tb;
+    flex-shrink: 0;
+  }
 }
 
 /* Mobile friendly layout */
@@ -425,7 +540,7 @@ html.is-mobile #layoutSplitBtn {
 }
 
 /* splitビューボタンを含む親divも非表示にして空白を詰める */
-html.is-mobile #headerActions>div:has(#layoutBlockBtn) {
+html.is-mobile #headerActions > div:has(#layoutBlockBtn) {
   display: none !important;
 }
 
@@ -679,7 +794,10 @@ body {
     radial-gradient(1200px 600px at 10% -15%, var(--bg-spot-1), transparent 60%),
     radial-gradient(900px 600px at 90% -10%, var(--bg-spot-2), transparent 65%),
     radial-gradient(var(--bg-grid) 1px, transparent 1px);
-  background-size: auto, auto, 28px 28px;
+  background-size:
+    auto,
+    auto,
+    28px 28px;
   background-attachment: fixed;
 }
 
@@ -746,25 +864,23 @@ main {
   border-radius: 18px;
   border: 1px solid rgba(15, 23, 42, 0.12);
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(56, 189, 248, 0.12), transparent 55%),
-    #f8fafc;
+    radial-gradient(120% 140% at 0% 0%, rgba(56, 189, 248, 0.12), transparent 55%), #f8fafc;
   box-shadow: var(--shadow-md);
 }
 
 .dark #liveCodeArea {
   border-color: rgba(148, 163, 184, 0.16);
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(56, 189, 248, 0.12), transparent 50%),
-    #0b1220;
+    radial-gradient(120% 140% at 0% 0%, rgba(56, 189, 248, 0.12), transparent 50%), #0b1220;
 }
 
-#liveCodeArea>div:first-child {
+#liveCodeArea > div:first-child {
   background: rgba(255, 255, 255, 0.84);
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(10px);
 }
 
-.dark #liveCodeArea>div:first-child {
+.dark #liveCodeArea > div:first-child {
   background: rgba(2, 6, 23, 0.85);
   border-bottom: 1px solid rgba(148, 163, 184, 0.15);
 }
@@ -831,7 +947,9 @@ main {
 #projectTitleInput {
   border-color: var(--stroke-strong) !important;
   background: rgba(255, 255, 255, 0.7);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .dark #projectTitleInput {
@@ -848,7 +966,9 @@ main {
 #shareBtn,
 #showCodeBtn,
 #themeToggle {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 #quickActions button:hover,
@@ -860,7 +980,11 @@ main {
 #shareBtn {
   color: var(--accent-strong) !important;
   border-color: rgba(14, 165, 233, 0.35) !important;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(226, 248, 255, 0.8)) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(226, 248, 255, 0.8)
+  ) !important;
 }
 
 .dark #shareBtn {
@@ -904,23 +1028,23 @@ main {
 }
 
 /* Run Bot Status - Success State */
-#runBotStatus[data-state="success"] {
+#runBotStatus[data-state='success'] {
   background: rgba(236, 253, 245, 0.9);
   color: rgb(6, 78, 59);
 }
 
-.dark #runBotStatus[data-state="success"] {
+.dark #runBotStatus[data-state='success'] {
   background: rgba(6, 78, 59, 0.6);
   color: rgb(236, 253, 245);
 }
 
 /* Run Bot Status - Error State */
-#runBotStatus[data-state="error"] {
+#runBotStatus[data-state='error'] {
   background: rgba(254, 242, 242, 0.9);
   color: rgb(127, 29, 29);
 }
 
-.dark #runBotStatus[data-state="error"] {
+.dark #runBotStatus[data-state='error'] {
   background: rgba(127, 29, 29, 0.6);
   color: rgb(254, 242, 242);
 }
@@ -990,74 +1114,73 @@ main {
   box-shadow: var(--ring);
 }
 
-#shareViewOverlay>div {
+#shareViewOverlay > div {
   border: 1px solid rgba(14, 165, 233, 0.25);
   box-shadow: var(--shadow-md);
 }
 
-
 /* Indigo Remap */
-[class*="text-indigo-"] {
+[class*='text-indigo-'] {
   color: var(--accent-strong) !important;
 }
 
-.dark [class*="text-indigo-"] {
+.dark [class*='text-indigo-'] {
   color: var(--accent) !important;
 }
 
-[class*="border-indigo-"] {
+[class*='border-indigo-'] {
   border-color: rgba(14, 165, 233, 0.35) !important;
 }
 
-.dark [class*="border-indigo-"] {
+.dark [class*='border-indigo-'] {
   border-color: rgba(56, 189, 248, 0.45) !important;
 }
 
-[class~="bg-indigo-50"] {
+[class~='bg-indigo-50'] {
   background-color: rgba(14, 165, 233, 0.08) !important;
 }
 
-[class~="bg-indigo-500"] {
+[class~='bg-indigo-500'] {
   background-color: var(--accent) !important;
 }
 
-[class~="bg-indigo-600"] {
+[class~='bg-indigo-600'] {
   background-color: var(--accent-strong) !important;
 }
 
-[class~="bg-indigo-700"] {
+[class~='bg-indigo-700'] {
   background-color: #0369a1 !important;
 }
 
-[class~="bg-indigo-900/20"] {
+[class~='bg-indigo-900/20'] {
   background-color: rgba(14, 165, 233, 0.18) !important;
 }
 
-[class~="bg-indigo-900/30"] {
+[class~='bg-indigo-900/30'] {
   background-color: rgba(14, 165, 233, 0.24) !important;
 }
 
-[class~="bg-indigo-500/10"] {
+[class~='bg-indigo-500/10'] {
   background-color: rgba(14, 165, 233, 0.12) !important;
 }
 
-[class~="bg-indigo-500/20"] {
+[class~='bg-indigo-500/20'] {
   background-color: rgba(14, 165, 233, 0.2) !important;
 }
 
-[class~="hover:bg-indigo-50"]:hover {
+[class~='hover:bg-indigo-50']:hover {
   background-color: rgba(14, 165, 233, 0.12) !important;
 }
 
-[class~="hover:bg-indigo-500"]:hover {
+[class~='hover:bg-indigo-500']:hover {
   background-color: var(--accent) !important;
 }
 
-[class~="hover:bg-indigo-700"]:hover {
+[class~='hover:bg-indigo-700']:hover {
   background-color: #0369a1 !important;
 }
 
-[class~="hover:text-indigo-600"]:hover {
+[class~='hover:text-indigo-600']:hover {
   color: var(--accent-strong) !important;
 }
 
@@ -1070,10 +1193,9 @@ main {
   --tw-gradient-to: var(--accent-2) !important;
 }
 
-[class~="via-indigo-50/95"] {
+[class~='via-indigo-50/95'] {
   --tw-gradient-via: rgba(14, 165, 233, 0.08) !important;
 }
-
 
 /* Mobile Modern Overrides */
 html.is-mobile #workspace-container {
@@ -1085,7 +1207,6 @@ html.is-mobile #blocklyDiv {
   box-shadow: var(--shadow-sm);
 }
 
-
 /* Workspace Gap Fix */
 #workspace-container {
   gap: 0;
@@ -1095,33 +1216,85 @@ html.is-mobile #blocklyDiv {
   gap: 12px;
 }
 
+#workspace-container.split-view #blocklyDiv {
+  width: auto;
+  flex: 1 1 55%;
+  min-width: 620px;
+}
+
+#workspace-container.split-view #liveCodeArea {
+  width: auto;
+  flex: 1 1 45%;
+  min-width: 400px;
+}
+
+#workspace-container.split-view-compact {
+  flex-direction: column;
+  --split-compact-gap: 12px;
+  --split-compact-block-size: calc((100% - var(--split-compact-gap)) * 0.58);
+  --split-compact-preview-size: calc((100% - var(--split-compact-gap)) * 0.42);
+}
+
+#workspace-container.split-view-compact #blocklyDiv {
+  width: 100%;
+  height: 100%;
+  flex: 0 0 100%;
+}
+
+#workspace-container.split-view-compact #liveCodeArea {
+  width: 100%;
+  height: 0%;
+  flex: 0 0 0%;
+  min-height: 0;
+  border-left: none;
+}
+
+#workspace-container.split-view.split-view-compact #blocklyDiv {
+  flex: 0 0 var(--split-compact-block-size);
+  height: var(--split-compact-block-size);
+  min-width: 0;
+  min-height: min(320px, var(--split-compact-block-size));
+}
+
+#workspace-container.split-view.split-view-compact #liveCodeArea {
+  flex: 0 0 var(--split-compact-preview-size);
+  height: var(--split-compact-preview-size);
+  min-width: 0;
+  min-height: min(220px, var(--split-compact-preview-size));
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  border-left: none;
+}
+
+.dark #workspace-container.split-view.split-view-compact #liveCodeArea {
+  border-top-color: rgba(148, 163, 184, 0.16);
+}
 
 /* Indigo Remap Dark Variants */
-[class*="bg-indigo-500/10"] {
+[class*='bg-indigo-500/10'] {
   background-color: rgba(14, 165, 233, 0.12) !important;
 }
 
-[class*="bg-indigo-500/20"] {
+[class*='bg-indigo-500/20'] {
   background-color: rgba(14, 165, 233, 0.2) !important;
 }
 
-[class*="bg-indigo-900/20"] {
+[class*='bg-indigo-900/20'] {
   background-color: rgba(14, 165, 233, 0.18) !important;
 }
 
-[class*="bg-indigo-900/30"] {
+[class*='bg-indigo-900/30'] {
   background-color: rgba(14, 165, 233, 0.24) !important;
 }
 
-[class*="hover:bg-indigo-50"]:hover {
+[class*='hover:bg-indigo-50']:hover {
   background-color: rgba(14, 165, 233, 0.12) !important;
 }
 
-[class*="hover:bg-indigo-500"]:hover {
+[class*='hover:bg-indigo-500']:hover {
   background-color: var(--accent) !important;
 }
 
-[class*="hover:bg-indigo-700"]:hover {
+[class*='hover:bg-indigo-700']:hover {
   background-color: #0369a1 !important;
 }
 
@@ -1140,8 +1313,6 @@ button:active {
 #themeToggle:active {
   transform: scale(0.92) !important;
 }
-
-
 
 /* README Content Styles */
 .readme-content h1 {
@@ -1268,14 +1439,14 @@ button:active {
   color: #818cf8;
 }
 
-.readme-content div[align="center"],
+.readme-content div[align='center'],
 .readme-content center {
   text-align: center;
   display: block;
   width: 100%;
 }
 
-.readme-content img[align="center"] {
+.readme-content img[align='center'] {
   display: block;
   margin: 1rem auto;
 }
@@ -1286,7 +1457,7 @@ button:active {
 }
 
 .readme-content br {
-  content: "";
+  content: '';
   display: block;
   margin: 0.5rem 0;
 }
@@ -1295,3 +1466,27 @@ button:active {
 .blocklyZoom {
   translate: 0 -35px;
 }
+
+/* ==========================================================================
+   Realtime Collaborative Editing Styles
+   ========================================================================== */
+@keyframes collab-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-fast {
+  animation: collab-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Remote selection outline transition */
+g.blocklyDraggable > path.blocklyPath {
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+

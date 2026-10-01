@@ -2,18 +2,18 @@
 <html lang="ja">
 
 <head>
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Easy Discord Bot Builder" />
-    <meta property="og:title" content="Easy Discord Bot Builder" />
-    <meta property="og:description" content="DiscordのBotをノーコードで。" />
-    <meta property="og:url" content="https://himais0giiiin.com//" />
-    <meta property="og:image" content="https://himais0giiiin.com/static/ogp.png" />
-    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Easy Discord Bot Builder">
+    <meta property="og:title" content="Easy Discord Bot Builder">
+    <meta property="og:description" content="DiscordのBotをノーコードで。">
+    <meta property="og:url" content="https://himais0giiiin.com/">
+    <meta property="og:image" content="https://himais0giiiin.com/static/ogp.png">
+    <meta property="og:locale" content="ja_JP">
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Easy Discord Bot Builder" />
-    <meta name="twitter:description" content="DiscordのBotをノーコードで。" />
-    <meta name="twitter:image" content="https://himais0giiiin.com/static/ogp.png" />
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Easy Discord Bot Builder">
+    <meta name="twitter:description" content="DiscordのBotをノーコードで。">
+    <meta name="twitter:image" content="https://himais0giiiin.com/static/ogp.png">
 
     <meta charset="UTF-8">
     <meta name="viewport"
@@ -25,13 +25,24 @@
         // Guard against double Shadow DOM attachment (common in some libraries/proxies)
         (function () {
             const org = Element.prototype.attachShadow;
+            const attachedHosts = new WeakSet();
             if (org && !org._guarded) {
                 Element.prototype.attachShadow = function (opts) {
+                    if (attachedHosts.has(this) || this.shadowRoot) {
+                        return this.shadowRoot;
+                    }
                     try {
-                        return org.call(this, opts);
+                        const root = org.call(this, opts);
+                        attachedHosts.add(this);
+                        return root;
                     } catch (e) {
+                        const message = String(e?.message || '').toLowerCase();
+                        const duplicateShadowError =
+                            message.includes('already hosts')
+                            || message.includes('shadow root cannot be created');
                         if (e.name === 'NotSupportedError' &&
-                            (e.message.includes('already hosts') || this.shadowRoot)) {
+                            (duplicateShadowError || this.shadowRoot)) {
+                            attachedHosts.add(this);
                             console.warn('Prevented redundant attachShadow call on:', this);
                             return this.shadowRoot;
                         }
@@ -715,7 +726,7 @@
             <div class="hero-media reveal" style="--delay: 0.2s;">
                 <div class="media-shell">
                     <div class="media-frame">
-                        <video src="./out.mp4" autoplay muted loop playsinline></video>
+                        <video src="/static/out.mp4" autoplay muted loop playsinline></video>
                     </div>
                 </div>
                 <div class="floating-card">

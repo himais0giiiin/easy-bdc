@@ -1,0 +1,22 @@
+{
+  "name": "easy-discord-bot-builder",
+  "version": "1.0.0",
+  "description": "Easy Discord Bot Builder - A no-code Discord bot builder",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "node --test tests/*.test.js",
+    "preview": "vite preview",
+    "deploy": "wrangler deploy",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "glob": "^13.0.6",
+    "tailwindcss": "^4.2.1",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "wrangler": "^4.70.0"
+  }
+}

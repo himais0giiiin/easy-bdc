@@ -5,8 +5,11 @@ compatibility_date = "2025-11-22"
 [vars]
 DEBUG = true
 
+[build]
+command = "npm run build"
+
 [assets]
-directory = "./"
+directory = "dist"
 
 [observability]
 enabled = false

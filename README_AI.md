@@ -2,6 +2,8 @@
 
 このファイルは、AIエージェントが本プロジェクト（EDBP）の仕様を完全に把握し、既存のブロックと調和する新しいブロックやプラグインを「絶対に出力」できるようにするためのマスタードキュメントです。
 
+> プラグイン仕様の正本は [`spec/Plugin-API-2.0.md`](spec/Plugin-API-2.0.md) です。本文中の古いV1例は互換性確認用であり、新規プラグインには使用しません。PHPランタイムと`Blockly.PHP`は廃止されています。
+
 ## 1. プロジェクトの全体像
 **EDBP**は、Google BlocklyベースのDiscord Botビルダーです。ユーザーがブラウザ上で組んだブロックから、最新の `discord.py` (Python) コードを生成します。
 
@@ -9,9 +11,13 @@
 - **Block Engine**: Google Blockly
 - **Target Language**: Python 3.10+ (`discord.py`)
 - **Main Files**:
-    - `editor/blocks.js`: 全てのカスタムブロックの定義と生成ロジック。
-    - `editor/script.js`: Blocklyの初期化、保存、Pythonコードの組み立て。
-    - `spec/Plugin.md`: プラグイン作成の公式仕様書。
+    - `editor/blocks/index.js` (およびその配下の各モジュール): 全てのカスタムブロックの定義と生成ロジック。
+    - `editor/script.js` (および `editor/core/` 配下のモジュール): Blocklyの初期化、保存、Pythonコードの組み立て。
+    - `editor/plugin.js`: プラグインのインストール・認識・有効化。
+    - `editor/plugin-api-v2.js`: 新規プラグイン向けのAPI 2.0。
+    - `editor/plugin-registry-v2.js`: manifest、ID、依存関係の正規化と診断。
+    - `spec/Plugin-API-2.0.md`: 新規プラグインの公式仕様書。
+    - `spec/Plugin.md`: V1互換プラグインの保守用リファレンス。
 
 ## 2. 実装の黄金律 (Core Patterns)
 
@@ -28,7 +34,7 @@ AIがコードを出力する際は、必ず以下のパターンに従ってく
 - **`Blockly.Python.ORDER_...`**: 戻り値がある場合は、正しい優先順位定数（`ORDER_ATOMIC`, `ORDER_NONE` など）を返してください。
 
 ## 3. ユーティリティ関数
-`blocks.js` 内で利用可能な便利な内部関数：
+Blocklyのエコシステム内で利用可能な便利な内部関数：
 - `getBranchCode(block, name)`: 指定した名前のステートメント入力を取得し、空の場合は `pass` を返します。
 - `Blockly.Python.valueToCode(block, name, order)`: 入力値を取得。
 
@@ -41,7 +47,7 @@ AIがコードを出力する際は、必ず以下のパターンに従ってく
 ### 🤖 EDBP Expert Developer Prompt
 
 あなたは **EDBP (Easy Discord Bot Builder)** のリード開発者です。
-Blocklyとdiscord.pyの両方に精通しており、既存の `editor/blocks.js` のスタイルに100%準拠したコードを出力します。
+Blocklyとdiscord.pyの両方に精通しており、既存の `editor/blocks/` 配下のモジュールスタイルに100%準拠したコードを出力します。
 
 #### 【出力の必須要件】
 1. **Blockly.Blocks['id']**: 
@@ -61,10 +67,14 @@ Blocklyとdiscord.pyの両方に精通しており、既存の `editor/blocks.js
 **⚠️ 重要：以下の3つのファイルはセットで1つのタスクです。`plugin.js` だけを出力して完了とせず、必ず3つ全てを出力しきってください。**
 
 1. **manifest.json**: 
-   - `spec/Plugin.md` に準拠。
+   - `spec/Plugin-API-2.0.md` に準拠し、`apiVersion: "2.0"`を指定。
    - **バージョン管理**: 指示がない限り、勝手にバージョンを上げない（既存のプラグイン更新時）。
+   - `version` の書き方は自由。
    - `affectsStyle`: CSSを追加する場合は `true`、しない場合は `false`。
    - `affectsBlocks`: ブロックを追加する場合は `true`、しない場合は `false`。
+   - `minAppVersion` は `1.1.0` を使うこと。
+   - `requiredPlugins` / `permissions` / `api` を必要に応じて使い、`license` は manifest に含めない。
+   - 生成コード側で追加パッケージが必要な場合だけ、`pipInstall`にパッケージ名を記載する。
 2. **plugin.js**: `Plugin` クラスを実装。クリーンアップ（`onunload`）を忘れずに。
 3. **README.md**: 
    - ユーザーが直接保存できるよう、**必ずコードブロック（\```markdown ... \```）で囲って出力してください。**
@@ -180,7 +190,14 @@ ${branch}
   "tags": ["utility"],
   "affectsStyle": false,
   "affectsBlocks": true,
-  "license": "MIT"
+  "minAppVersion": "1.1.0",
+  "externalPackages": ["requests", "aiohttp"],
+  "pipInstall": ["discord.py[voice]", "aiohttp"],
+  "requiredPlugins": ["core-utils-plugin"],
+  "api": {
+    "name": "Example API",
+    "baseUrl": "https://api.example.com"
+  }
 }
 
 // === (2) plugin.js ===
@@ -315,7 +332,7 @@ await my_plugin_function()
 5. **ブロックの見た目の変更**: `setColour` の調整だけでなく、`applyStyles` を通じたCSSカスタマイズや、カスタムシェイプの提案も行います。
 6. **PopUIの実装**: プラグイン内で独自の設定画面や通知などのポップアップUI (Modal) を、プロジェクトのUI（Tailwind CSS）と調和する形で実装します。
 
-依頼内容に応じて、`spec/Plugin.md` の公式仕様を完全に満たす出力を生成してください。
+依頼内容に応じて、`spec/Plugin-API-2.0.md` の公式仕様を満たす出力を生成してください。既存V1プラグインの修正時だけ`spec/Plugin.md`を参照してください。
 **(重要) manifest.json, plugin.js, README.md の3つを全て出力し、最後に環境（エージェント/チャット）に合った方法でZIPを提供したことを確認してから回答を終えてください。**
 解説が必要な場合は日本語で丁寧に行ってください。
 ---
