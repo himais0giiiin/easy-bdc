@@ -11,13 +11,12 @@ class WorkspaceShareCodec {
       return '';
     }
     try {
-      // 生のBlocklyデータからIDを間引いたうえでJSON→LZ圧縮する
+      // Preserve arbitrary IDs: variable fields and plugin extra state may use them.
       const raw = Blockly.serialization.workspaces.save(workspace);
-      const stripped = WorkspaceShareCodec.#stripIds(raw);
 
       // プラグイン情報の付与
       const payloadObj = {
-        workspace: stripped,
+        workspace: raw,
         pluginUUIDs: workspace.pluginManager?.getPluginUUIDsForShare() || [],
         pluginInfo: workspace.pluginManager?.getSharablePluginsInfo() || []
       };
@@ -105,17 +104,18 @@ class WorkspaceShareCodec {
       // 最後にワークスペースを読み込む
       // イベントを止めて読み込むことで、自動保存などのリスナーが
       // 共有データでローカルの保存内容を上書きしてしまうのを防ぐ
-      try {
-        if (workspaceData) {
-          Blockly.Events.disable();
-          try {
-            Blockly.serialization.workspaces.load(workspaceData, workspace);
-          } finally {
-            Blockly.Events.enable();
-          }
+      if (workspaceData) {
+        const backup = Blockly.serialization.workspaces.save(workspace);
+        Blockly.Events.disable();
+        try {
+          Blockly.serialization.workspaces.load(workspaceData, workspace);
+        } catch (loadError) {
+          try { Blockly.serialization.workspaces.load(backup, workspace); }
+          catch (restoreError) { console.error('Failed to restore workspace after shared-data error:', restoreError); }
+          throw loadError;
+        } finally {
+          Blockly.Events.enable();
         }
-      } catch (loadError) {
-        console.warn('Blockly load encountered errors (possibly missing block definitions):', loadError);
       }
 
       return true;
@@ -125,21 +125,6 @@ class WorkspaceShareCodec {
     }
   }
 
-  static #stripIds(value) {
-    if (Array.isArray(value)) {
-      return value.map((item) => WorkspaceShareCodec.#stripIds(item));
-    }
-    if (!value || typeof value !== 'object') {
-      return value;
-    }
-    // ブロック間の参照に不要なidだけを落としてサイズ削減
-    const result = {};
-    for (const [key, val] of Object.entries(value)) {
-      if (key === 'id') continue;
-      result[key] = WorkspaceShareCodec.#stripIds(val);
-    }
-    return result;
-  }
 }
 
 export default class WorkspaceStorage {
@@ -241,11 +226,18 @@ export default class WorkspaceStorage {
 
   // JSONまたはXML文字列を判別して読み込む
   importText(text) {
+    let backup;
+    try { backup = Blockly.serialization.workspaces.save(this.#workspace); }
+    catch (_) { backup = null; }
     if (WorkspaceStorage.#looksLikeXml(text)) {
-      // 旧フォーマット(XML)の場合はDOM化して読込
-      const dom = Blockly.Xml.textToDom(text);
-      Blockly.Xml.clearWorkspaceAndLoadFromXml(dom, this.#workspace);
-      return true;
+      try {
+        const dom = Blockly.Xml.textToDom(text);
+        Blockly.Xml.clearWorkspaceAndLoadFromXml(dom, this.#workspace);
+        return true;
+      } catch (error) {
+        this.#restoreBackup(backup);
+        return false;
+      }
     }
     try {
       // JSONはシリアライズAPIを使って復元
@@ -253,8 +245,15 @@ export default class WorkspaceStorage {
       Blockly.serialization.workspaces.load(data, this.#workspace);
       return true;
     } catch (error) {
+      this.#restoreBackup(backup);
       return false;
     }
+  }
+
+  #restoreBackup(backup) {
+    if (!backup) return;
+    try { Blockly.serialization.workspaces.load(backup, this.#workspace); }
+    catch (restoreError) { console.error('ワークスペースの復元に失敗しました。', restoreError); }
   }
 
   // 共有URL向けの極小データを生成

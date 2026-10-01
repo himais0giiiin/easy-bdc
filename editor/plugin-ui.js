@@ -143,6 +143,55 @@ export class PluginUI {
         this.showSideToast(message, 'share');
     }
 
+    /**
+     * Collaboration never installs a plugin silently. The room owner may offer a
+     * block plugin, or a guest may ask the owner to add one; both paths land here.
+     */
+    async confirmCollabPluginInstall(plugin, { requester = null } = {}) {
+        if (!plugin?.id || !plugin?.repo) {
+            this.showSideError('このプラグインは共有用のGitHub情報がないため取得できません。');
+            return false;
+        }
+        const installed = this.pluginManager.getRegistry().find(item => item.id === plugin.id);
+        const requestPrefix = requester?.name ? `${requester.name} さんから` : '共同編集ルームから';
+        const text = installed
+            ? `${requestPrefix}「${plugin.name || plugin.id}」を共同編集で使います。有効にしますか？`
+            : `${requestPrefix}「${plugin.name || plugin.id}」のブロックが追加されました。ダウンロードして共同編集に参加しますか？`;
+        const confirmed = typeof window.Swal?.fire === 'function'
+            ? (await window.Swal.fire({
+                title: 'プラグインを取得しますか？', text, icon: 'question',
+                showCancelButton: true, confirmButtonText: installed ? '有効にする' : 'ダウンロードする',
+                cancelButtonText: '今はしない', reverseButtons: true,
+            })).isConfirmed
+            : window.confirm(text);
+        if (!confirmed) return false;
+
+        try {
+            let target = installed;
+            if (!target) {
+                const repoInfo = this.pluginManager.parseGitHubUrl(plugin.repo);
+                if (!repoInfo?.fullName) throw new Error('プラグインの配布URLが不正です。');
+                target = await this.pluginManager.installFromGitHub(repoInfo.fullName, plugin.installRef || 'main');
+                const trust = this.pluginManager.getManifestTrustLevel(target);
+                if ((trust?.level ?? trust) === 'danger') {
+                    const agreed = await this.confirmDangerousInstall(target.name || plugin.name || plugin.id, trust?.reason);
+                    if (!agreed) {
+                        await this.pluginManager.uninstallPlugin(target.id);
+                        return false;
+                    }
+                }
+            }
+            await this.pluginManager.enablePlugin(target.id);
+            this.renderMarketplace?.();
+            this.showSideSuccess(`「${target.name || plugin.name || plugin.id}」を有効にしました。`);
+            return true;
+        } catch (error) {
+            console.error('Failed to install collaboration plugin:', error);
+            this.showSideError(`プラグインを取得できませんでした: ${error.message || '不明なエラー'}`);
+            return false;
+        }
+    }
+
     ensureDeleteAgreementModal() {
         if (this.deleteAgreementModal) return this.deleteAgreementModal;
         const modal = document.createElement('div');
@@ -886,13 +935,14 @@ export class PluginUI {
             item.className = `flex items-center gap-3 p-4 rounded-xl border transition-all ${info.existing ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-500 cursor-pointer'}`;
 
             const value = info.repoUrl;
-            const versionLabel = info.ref !== 'main' ? `<span class="ml-2 px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-mono text-[10px]">${info.ref}</span>` : '';
+            const versionLabel = info.ref !== 'main' ? `<span class="ml-2 px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-mono text-[10px]">${this.escapeHtml(info.ref)}</span>` : '';
+            const safeValue = this.escapeHtml(value);
 
             item.innerHTML = `
-                <input type="checkbox" value="${value}" ${info.existing ? 'disabled' : 'checked'} class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0">
+                <input type="checkbox" value="${safeValue}" ${info.existing ? 'disabled' : 'checked'} class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0">
                 <div class="flex-grow info-area">
-                    <div class="font-bold text-lg text-slate-900 dark:text-white flex items-center">${info.name}${versionLabel}</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400">開発者: ${info.author} ${info.existing ? '(インストール済み)' : ''}</div>
+                    <div class="font-bold text-lg text-slate-900 dark:text-white flex items-center">${this.escapeHtml(info.name)}${versionLabel}</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400">開発者: ${this.escapeHtml(info.author)} ${info.existing ? '(インストール済み)' : ''}</div>
                 </div>
                 <i data-lucide="chevron-down" class="w-4 h-4 text-slate-300 detail-icon"></i>
             `;
@@ -1633,7 +1683,7 @@ export class PluginUI {
         if (level === 'certified') badges.push('<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-green-500 text-white leading-none">公認</span>');
         if (level === 'danger') {
             const reason = plugin.trustLevel?.reason ?? '危険性が報告されています。';
-            badges.push(`<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white leading-none cursor-help" title="危険の理由: ${reason}">危険</span>`);
+            badges.push(`<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white leading-none cursor-help" title="危険の理由: ${this.escapeHtml(reason)}">危険</span>`);
         }
 
         // 不可バッジ (独立判定)
@@ -1641,7 +1691,7 @@ export class PluginUI {
         const validation = isInstalled ? this.pluginManager.validateManifest(plugin) : { valid: !isInvalid };
         if (!validation.valid || isInvalid) {
             const reason = validation.missing ? `必須項目が不足しています: ${validation.missing.join(', ')}` : (plugin.trustLevel?.invalidReason || plugin.trustLevel?.reason || '必須項目が不足しています。');
-            badges.push(`<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-400 text-white leading-none cursor-help" title="${reason}">不可</span>`);
+            badges.push(`<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-400 text-white leading-none cursor-help" title="${this.escapeHtml(reason)}">不可</span>`);
         }
 
         const trustBadge = badges.join('');
@@ -1655,7 +1705,7 @@ export class PluginUI {
                 <div class="flex-grow min-w-0">
                     <div class="flex justify-between items-start">
                         <div class="font-bold text-sm text-slate-900 dark:text-white flex flex-wrap items-center gap-y-1">
-                            <span class="break-words">${plugin.name}</span>${trustBadge}
+                            <span class="break-words">${this.escapeHtml(plugin.name)}</span>${trustBadge}
                         </div>
                         ${isEnabled ? '<div class="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 ml-1 shrink-0"></div>' : ''}
                         ${!isInstalled ? '<i data-lucide="download-cloud" class="w-3.5 h-3.5 text-slate-300 ml-1 shrink-0"></i>' : ''}
@@ -1885,7 +1935,7 @@ export class PluginUI {
                 <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i>
                 <div class="text-sm">
                     <div class="font-bold text-red-600 dark:text-red-400">警告: このプラグインはブラックリストに登録されています</div>
-                    <div class="text-red-500/80 dark:text-red-400/80 mt-1">理由: ${dangerReason}</div>
+                    <div class="text-red-500/80 dark:text-red-400/80 mt-1">理由: ${this.escapeHtml(dangerReason)}</div>
                 </div>
             </div>
         ` : '';
@@ -1939,7 +1989,7 @@ export class PluginUI {
                 <i data-lucide="slash" class="w-5 h-5 text-slate-500 shrink-0 mt-0.5"></i>
                 <div class="text-sm">
                     <div class="font-bold text-slate-700 dark:text-slate-200">このプラグインは使用できません</div>
-                    <div class="text-slate-500 dark:text-slate-400 mt-1">理由: 必須項目（${validation.missing.join(', ')}）がマニフェストに含まれていません。</div>
+                    <div class="text-slate-500 dark:text-slate-400 mt-1">理由: 必須項目（${this.escapeHtml(validation.missing.join(', '))}）がマニフェストに含まれていません。</div>
                 </div>
             </div>
         ` : '';
@@ -1955,14 +2005,14 @@ export class PluginUI {
             <div class="flex flex-col mb-6">
                 <div class="flex justify-between items-start mb-4">
                     <div>
-                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-3">${plugin.name} ${trustBadge}</h1>
+                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-3">${this.escapeHtml(plugin.name)} ${trustBadge}</h1>
                         <div class="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-500 dark:text-slate-400">
                             <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> 開発者: ${this.escapeHtml(displayAuthor)}</span>
-                            <span class="flex items-center gap-1"><i data-lucide="star" class="w-3.5 h-3.5"></i> ${plugin.stars} Stars</span>
+                            <span class="flex items-center gap-1"><i data-lucide="star" class="w-3.5 h-3.5"></i> ${Number(plugin.stars) || 0} Stars</span>
                         </div>
                     </div>
                     <div class="text-sm text-indigo-500 dark:text-indigo-400">
-                        <a href="${plugin.repo}" target="_blank" class="hover:underline flex items-center gap-1">
+                        <a href="${this.safeExternalUrl(plugin.repo)}" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1">
                             <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
                         </a>
                     </div>
@@ -1974,9 +2024,9 @@ export class PluginUI {
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">バージョン (リリース)</label>
                             <select id="ghVersionSelect" class="w-full pl-3 pr-10 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat transition-all">
-                                <option value="default">デフォルト (${plugin.defaultBranch})</option>
+                                <option value="default">デフォルト (${this.escapeHtml(plugin.defaultBranch)})</option>
                                 ${branchOptions}
-                                ${releases.map(r => `<option value="release:${r.tag_name}">${r.tag_name} ${r.prerelease ? '(Pre-release)' : ''}</option>`).join('')}
+                                ${releases.map(r => `<option value="release:${this.escapeHtml(r.tag_name)}">${this.escapeHtml(r.tag_name)} ${r.prerelease ? '(Pre-release)' : ''}</option>`).join('')}
                             </select>
                         </div>
                         <div>
@@ -2150,7 +2200,7 @@ export class PluginUI {
                 <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i>
                 <div class="text-sm">
                     <div class="font-bold text-red-600 dark:text-red-400">警告: このプラグインはブラックリストに登録されています</div>
-                    <div class="text-red-500/80 dark:text-red-400/80 mt-1">理由: ${dangerReason}</div>
+                    <div class="text-red-500/80 dark:text-red-400/80 mt-1">理由: ${this.escapeHtml(dangerReason)}</div>
                 </div>
             </div>
         ` : '';
@@ -2163,12 +2213,12 @@ export class PluginUI {
                 <i data-lucide="slash" class="w-5 h-5 text-slate-500 shrink-0 mt-0.5"></i>
                 <div class="text-sm">
                     <div class="font-bold text-slate-700 dark:text-slate-200">このプラグインは使用できません</div>
-                    <div class="text-slate-500 dark:text-slate-400 mt-1">理由: ${invalidReason}</div>
+                    <div class="text-slate-500 dark:text-slate-400 mt-1">理由: ${this.escapeHtml(invalidReason)}</div>
                 </div>
             </div>
         ` : '';
 
-        const sourceUrl = plugin.source || plugin.repo || '';
+        const sourceUrl = this.safeExternalUrl(plugin.source || plugin.repo || '');
 
         this.pluginDetailContent.innerHTML = `
             <div id="pluginNewsPanel">${this.renderNewsPanelHtml(plugin)}</div>
@@ -2178,15 +2228,15 @@ export class PluginUI {
             ${dependencyWarning}
             <div class="flex justify-between items-start mb-6">
                 <div class="min-w-0 flex-grow">
-                    <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-3 break-words">${plugin.name} ${trustBadge}</h1>
+                    <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-3 break-words">${this.escapeHtml(plugin.name)} ${trustBadge}</h1>
                     <div class="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-500 dark:text-slate-400">
-                        <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> 開発者: ${plugin.author}</span>
-                        <span class="flex items-center gap-1"><i data-lucide="tag" class="w-3.5 h-3.5"></i> バージョン: ${plugin.version}</span>
+                        <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> 開発者: ${this.escapeHtml(plugin.author)}</span>
+                        <span class="flex items-center gap-1"><i data-lucide="tag" class="w-3.5 h-3.5"></i> バージョン: ${this.escapeHtml(plugin.version)}</span>
                     </div>
-                    <div class="mt-1 text-xs font-mono text-slate-400">UUID: ${plugin.uuid}</div>
+                    <div class="mt-1 text-xs font-mono text-slate-400">UUID: ${this.escapeHtml(plugin.uuid)}</div>
                     <div class="mt-2 flex gap-2 items-center">
                         ${sourceUrl ? `
-                        <a href="${sourceUrl}" target="_blank" class="text-xs text-indigo-500 hover:underline flex items-center gap-1">
+                        <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-500 hover:underline flex items-center gap-1">
                             <i data-lucide="github" class="w-3 h-3"></i> リポジトリ
                         </a>` : ''}
                         <span class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
@@ -2490,6 +2540,10 @@ export class PluginUI {
         if (!buttonElement) return;
 
         const wasEnabled = this.pluginManager.isPluginEnabled(plugin.id);
+        const previousManifest = typeof structuredClone === 'function'
+            ? structuredClone(this.pluginManager.installedPlugins[plugin.id])
+            : JSON.parse(JSON.stringify(this.pluginManager.installedPlugins[plugin.id]));
+        let installedManifest = null;
         const originalHtml = buttonElement.innerHTML;
         buttonElement.disabled = true;
         buttonElement.innerHTML = '<i class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></i><span>更新中...</span>';
@@ -2525,10 +2579,11 @@ export class PluginUI {
             }
 
             if (wasEnabled) {
-                await this.pluginManager.disablePlugin(plugin.id);
+                await this.pluginManager.disablePlugin(plugin.id, { allowDependents: true });
             }
 
             const manifest = await this.pluginManager.installFromGitHub(fullName, targetRef);
+            installedManifest = manifest;
             if (wasEnabled) {
                 await this.pluginManager.enablePlugin(manifest.id);
             }
@@ -2544,6 +2599,13 @@ export class PluginUI {
             this.showDetail(manifest);
             this.showSideSuccess(`プラグインを更新しました: ${beforeLabel} -> ${afterLabel}`);
         } catch (error) {
+            if (installedManifest?.id && installedManifest.id !== plugin.id) {
+                delete this.pluginManager.installedPlugins[installedManifest.id];
+            }
+            if (previousManifest) {
+                this.pluginManager.installedPlugins[plugin.id] = previousManifest;
+                this.pluginManager.saveInstalledPlugins();
+            }
             if (wasEnabled && !this.pluginManager.isPluginEnabled(plugin.id)) {
                 try {
                     await this.pluginManager.enablePlugin(plugin.id);
@@ -2615,7 +2677,7 @@ export class PluginUI {
     }
 
     renderMarkdown(markdown) {
-        if (typeof marked === 'undefined') return markdown;
+        if (typeof marked === 'undefined') return this.escapeHtml(markdown);
 
         // marked.js のオプション設定
         marked.setOptions({
@@ -2640,7 +2702,19 @@ export class PluginUI {
                 FORBID_TAGS: []
             });
         }
-        return rawHtml;
+        return this.escapeHtml(markdown);
+    }
+
+    safeExternalUrl(value) {
+        try {
+            const source = String(value || '').trim();
+            if (!source) return '';
+            const parsed = new URL(source, window.location.origin);
+            if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+            return this.escapeHtml(parsed.href);
+        } catch (_) {
+            return '';
+        }
     }
 
     escapeHtml(str) {

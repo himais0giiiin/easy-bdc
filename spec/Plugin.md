@@ -1,187 +1,65 @@
-# EDBP プラグイン開発完全ガイド (Complete Guide)
+# EDBP プラグイン仕様（互換リファレンス）
 
-EDBP (Easy Discord Bot Builder) の機能を拡張するためのプラグインを作成するための公式ガイドです。
+新しくプラグインを作る場合は、まず [Plugin API 2.0 開発者ガイド](./Plugin-API-2.0.md) を読んでください。
 
----
+この文書は、既存のV1プラグインを保守するための互換仕様です。新規開発ではAPI 2.0を使用してください。
 
-## 1. クイックスタート
+## ファイル構成
 
-プラグインは、以下の2つのファイルを同梱したフォルダ（または ZIP 形式）で構成されます。
+プラグインのZIPは、`manifest.json`と`plugin.js`をルートに含めます。
 
-1.  **`manifest.json`**: プラグインのメタデータ。
-2.  **`plugin.js`**: プラグインのロジックを記述した JavaScript ファイル。
+```text
+plugin.zip
+├─ manifest.json
+└─ plugin.js
+```
 
-GitHub で公開する場合は、リポジトリのルートにこれらのファイルを配置し、トピックに `edbp-plugin` を追加してください。
+V1プラグインは`Plugin(workspace)`クラスを実装します。
 
----
+```js
+class Plugin {
+  constructor(workspace) {
+    this.workspace = workspace;
+  }
 
-## 2. manifest.json の仕様 (改造版)
+  async onload() {}
+  async onunload() {}
+}
+```
 
-プラグインの情報を定義します。以下のフィールドが推奨されます。
+V1のグローバル登録は現在も読み込めますが、解除漏れや他プラグインとの衝突を起こしやすいため、変更時はV2へ移行してください。
+
+## V1 manifest
 
 ```json
 {
-  "id": "my-custom-plugin",
-  "name": "サンプルプラグイン",
+  "id": "legacy-plugin",
+  "name": "Legacy Plugin",
   "version": "1.0.0",
-  "author": "あなたの名前",
-  "description": "このプラグインは新しいコマンドブロックを追加します。",
-  "icon": "https://example.com/icon.png",
-  "tags": ["utility", "commands"],
+  "author": "Your Name",
+  "description": "既存プラグインの例",
   "affectsStyle": false,
   "affectsBlocks": true,
-  "repo": "https://github.com/YourName/my-plugin",
-  "externalPackages": ["requests", "aiohttp"],
-  "pipInstall": ["discord.py[voice]", "aiohttp"],
-  "requiredPlugins": ["core-utils-plugin"],
-  "api": {
-    "name": "Example API",
-    "baseUrl": "https://api.example.com"
-  },
   "minAppVersion": "1.1.0"
 }
 ```
 
-### フィールド詳細
+`minAppVersion`のruntime `1`（PHP）は廃止されています。PHPプラグイン、`Blockly.PHP`、`plugin.php`はサポートされません。
 
-| フィールド | 型 | 必須 | 説明 |
-| :--- | :--- | :--- | :--- |
-| `id` | string | 任意 | システム内部で使用されるID。未指定時は名前から自動生成されます。 |
-| `name` | string | **必須** | プラグインの表示名。 |
-| `version` | string | **必須** | プラグインのバージョン。書き方は自由。 |
-| `minAppVersion` | string | **必須** | `1.1.0` (JavaScript推奨) または `1.0.1` (PHP) を指定。JavaScript は `1.0.0` も後方互換として許可。 |
-| `author` | string | **必須** | 開発者名。 |
-| `description`| string | 任意 | 短い説明文。 |
-| `icon` | string | 任意 | アイコンのURLまたは絵文字。 |
-| `tags` | string[] | 任意 | 検索に使用されるタグ。 |
-| `affectsStyle`| boolean| **必須** | CSS等でUIに干渉するかどうか。 |
-| `affectsBlocks`| boolean| **必須** | Blocklyブロックの追加・変更を行うかどうか。 |
-| `repo` | string | 任意 | ソースコードのリポジトリURL（GitHubなど）。 |
-| `externalPackages` | string[] | 任意 | 実行時に必要な外部パッケージ名の配列（例: `requests`, `aiohttp`）。 |
-| `pipInstall` | string[] | 任意 | `pip install ○○` の `○○` 部分だけを並べる配列。`pip install` というコマンド文字列は書かない。 |
-| `requiredPlugins` | string[] | 任意 | このプラグインの前提となるプラグインIDの配列。 |
-| `api` | object | 任意 | 利用する外部API情報。最低でも `name` を含める。 |
+## V1からV2への対応表
 
-> `license` フィールドは廃止されました。manifest.json には含めないでください。
+| V1 | V2 |
+| --- | --- |
+| `constructor(workspace)` | `constructor(api)` |
+| `Blockly.Blocks[type] = definition` | `api.blocks.register(type, definition, generator)` |
+| `Blockly.Python.forBlock[type] = fn` | `api.codegen.register('Python', type, fn)` |
+| `localStorage`を直接操作 | `api.settings.get/set/remove` |
+| 手動でイベントを解除 | `api.on`の戻り値、または`api.use` |
 
-### バージョンシステム
-- 形式: `major.minor.runtime`（例: `1.2.0`）
-- `major`: 主要バージョン
-- `minor`: 小規模アップデート
-- `runtime`: `0=JavaScript`, `1=PHP` を識別
-- 現在の互換判定対象バージョン: `1.1.0` (JavaScript, `1.0.0` 互換あり) / `1.0.1` (PHP)
- ※PHPのサポートは外れています。
----
+詳細な移行手順は [Plugin API 2.0](./Plugin-API-2.0.md#4-移行ガイド) を参照してください。
 
-## 3. plugin.js の実装
+## 関連文書
 
-プラグインは、`Plugin` クラスをエクスポートする形式で記述します。
-
-```javascript
-class Plugin {
-    /**
-     * @param {Blockly.Workspace} workspace 
-     */
-    constructor(workspace) {
-        this.workspace = workspace;
-        this.styleElement = null;
-    }
-
-    /**
-     * プラグインが有効化された時に実行される
-     */
-    async onload() {
-        console.log("Plugin Loaded!");
-        
-        // 1. スタイルの追加
-        this.applyStyles();
-
-        // 2. ブロックの登録
-        this.registerBlocks();
-    }
-
-    /**
-     * プラグインが無効化または削除された時に実行される
-     * ※必ずクリーンアップを行ってください
-     */
-    async onunload() {
-        console.log("Plugin Unloaded");
-        
-        // スタイルの削除
-        if (this.styleElement) {
-            this.styleElement.remove();
-        }
-
-        // ブロックの削除（必要に応じて）
-        // ※通常、Blockly.Blocksからの削除のみでOK
-    }
-
-    applyStyles() {
-        const css = `
-            .my-custom-block-style {
-                color: #555;
-            }
-        `;
-        this.styleElement = document.createElement('style');
-        this.styleElement.textContent = css;
-        document.head.appendChild(this.styleElement);
-    }
-
-    registerBlocks() {
-        // ブロックの定義
-        Blockly.Blocks['my_plugin_hello'] = {
-            init: function() {
-                this.appendDummyInput()
-                    .appendField("こんにちは！");
-                this.setPreviousStatement(true, null);
-                this.setNextStatement(true, null);
-                this.setColour(160);
-            }
-        };
-
-        // コード生成ロジック (Python)
-        // Blockly.Python はグローバルにアクセス可能です
-        Blockly.Python['my_plugin_hello'] = function(block) {
-            return 'print("Hello from Plugin!")\n';
-        };
-    }
-}
-```
-
----
-
-## 4. 高度なテクニック
-
-### 独自のツールボックスカテゴリ
-既存のカテゴリにブロックを追加するだけでなく、独自のカテゴリを作成することも可能です。
-
-### 外部ライブラリの利用
-`onload` 内で `script` タグを動的に生成することで、外部 JS ライブラリを読み込めます。ただし、セキュリティ上の理由から推奨されません。
-
----
-
-## 5. 公開とセキュリティ
-
-### トピックの追加
-GitHub リポジトリのトピックに **`edbp-plugin`** を追加してください。
-EDBP の「GitHub で探す」機能で自動的にクロールされるようになります。
-
-### ホワイトリスト（公認）について
-公式チームによる審査を通過すると「公認」バッジが付与されます。
-公認を受けたプラグインは、共有URL機能において制限なく利用できるようになります。
-
-### セキュリティ上の注意点
-*   `isCustom: true` に設定されている場合、セキュリティ保護のためそのプラグインを含むプロジェクトの「共有」が制限されることがあります。
-*   ユーザーのトークンを外部に送信するような悪意のあるコードは、発見次第ブラックリストに登録され、実行がブロックされます。
----
-## 6. プラグイン検索エンジン
-
-EDBP のプラグイン検索では、以下のコマンドを使用することで高度なフィルタリングが可能です。
-
-| コマンド | 説明 | 例 |
-| :--- | :--- | :--- |
-| `tag:` | 指定したタグ（トピック）で検索します。 | `tag:utility` |
-| `author:` | 特定の開発者のプラグインを検索します。 | `author:YourName` |
-| `badge:` | バッジ（信頼レベル）でフィルタリングします。 | `badge:公式`, `badge:公認`, `badge:使用不可` |
-
-※複数のコマンドを組み合わせて使用することも可能です（例: `tag:utility badge:公式`）。
+- [Plugin API 2.0 開発者ガイド](./Plugin-API-2.0.md)
+- [プラグイン開発の入口](./Plugins.md)
+- [プラグインREADMEテンプレート](./PluginREADME_Template.md)

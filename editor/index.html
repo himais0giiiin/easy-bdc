@@ -44,20 +44,20 @@
     <meta property="og:title" content="Easy Discord Bot Builder (EDBB)">
     <meta property="og:description" content="ブラウザ上でブロックを組み合わせて、誰でも簡単に Discord Bot を作成できるビジュアルプログラミングツール。全て無料。">
     <meta property="og:url" content="https://himais0giiiin.com/editor/">
-    <meta property="og:image" content="https://himais0giiiin.com/static/ogp.jpg">
+    <meta property="og:image" content="https://himais0giiiin.com/static/ogp.png">
     <meta property="og:locale" content="ja_JP">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Easy Discord Bot Builder (EDBB)">
     <meta name="twitter:description" content="DiscordのBotをノーコードで。">
-    <meta name="twitter:image" content="https://himais0giiiin.com/static/ogp.jpg">
+    <meta name="twitter:image" content="https://himais0giiiin.com/static/ogp.png">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
     <title>Easy Discord Bot Builder</title>
 
-    <link rel="icon" type="image/svg+xml" href="/public/static/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 
     <!-- Tailwind CSS (JIT) - Note: CDN warning in console is expected during development. 
          For production builds, use Tailwind CLI: https://tailwindcss.com/docs/installation -->
@@ -128,6 +128,8 @@
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- PeerJS for Realtime Collaborative Editing -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" crossorigin="anonymous"></script>
 
 
 
@@ -164,7 +166,7 @@
                 </div>
                 <div
                     class="relative bg-white dark:bg-slate-900 p-2.5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center">
-                    <img src="/public/static/icon.svg" alt="EDBB" class="w-6 h-6">
+                    <img src="/static/icon.svg" alt="EDBB" class="w-6 h-6">
                 </div>
             </div>
             <div class="flex flex-col">
@@ -251,6 +253,16 @@
                 class="ml-2 inline-flex items-center justify-center gap-2 px-4 py-2 font-semibold text-indigo-600 dark:text-indigo-300 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900 rounded-lg shadow-sm hover:bg-indigo-50 dark:hover:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
                 <i data-lucide="share-2" class="w-4 h-4"></i>
                 <span class="hidden sm:inline">共有</span>
+            </button>
+
+            <!-- Collab Button -->
+            <button id="collabBtn"
+                class="ml-2 inline-flex items-center justify-center gap-2 px-3.5 py-2 font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 relative"
+                title="リアルタイム共同編集">
+                <span id="collabStatusBadge" class="w-2.5 h-2.5 rounded-full bg-slate-400 transition-colors"></span>
+                <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
+                <span class="hidden sm:inline">共同編集</span>
+                <span id="collabUserCount" class="hidden px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300"></span>
             </button>
 
             <!-- Run Bot Button (Desktop only) -->
@@ -1138,6 +1150,125 @@
                     <div id="pluginDetailContent" class="hidden">
                         <!-- プラグイン詳細がここに動的に追加される -->
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 共同編集モーダル -->
+    <div id="collabModal"
+        class="modal-backdrop hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="collabHeading">
+        <div
+            class="flex flex-col w-full max-w-lg overflow-hidden rounded-2xl shadow-2xl bg-white dark:bg-slate-900 modal-content border border-white/20 dark:border-slate-800 ring-1 ring-black/5">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="collabHeading" class="text-base font-bold text-slate-900 dark:text-white">リアルタイム共同編集</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">ブロック・作品名・リスト・JSONデータを一緒に編集</p>
+                    </div>
+                </div>
+                <button id="collabModalClose"
+                    class="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-100/80 dark:hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex flex-col gap-5 p-6 bg-slate-50/60 dark:bg-slate-950/40 overflow-y-auto max-h-[70vh]">
+                <!-- User Name Setting -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="collabUserNameInput" class="text-xs font-bold text-slate-600 dark:text-slate-300">
+                        あなたの表示名
+                    </label>
+                    <input id="collabUserNameInput" type="text" maxlength="20"
+                        class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="名前を入力...">
+                </div>
+
+                <!-- Host Section (when disconnected) -->
+                <div id="collabHostSection" class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <i data-lucide="radio" class="w-4 h-4 text-emerald-500"></i> 新しいルームをホストする
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            現在のワークスペースをベースに、他のユーザーを招待して共同編集を開始します。
+                        </p>
+                    </div>
+                    <button id="collabCreateRoomBtn"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] transition-all shadow-md shadow-indigo-500/20">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> 新しいルームを開始
+                    </button>
+                </div>
+
+                <!-- Join Section (when disconnected) -->
+                <div id="collabJoinSection" class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <i data-lucide="log-in" class="w-4 h-4 text-indigo-500"></i> ルームに参加する
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            共有されたルームIDを入力して、ホストのワークスペースに参加します。
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="collabRoomIdInput" type="text"
+                            class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-3.5 py-2 text-sm font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="ルームID または 招待リンク" aria-label="ルームID または 招待リンク">
+                        <button id="collabJoinRoomBtn"
+                            class="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 transition-all shrink-0">
+                            <i data-lucide="log-in" class="w-4 h-4"></i> 参加
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i>
+                        <span>参加時、現在のデータは自動保存され、切断時に元の状態に復活できます。</span>
+                    </p>
+                </div>
+
+                <!-- Active Session Section (when connected) -->
+                <button id="collabRestoreBtn" class="hidden w-full rounded-xl border border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">参加前の作品を復元</button>
+                <p class="text-xs text-slate-500 dark:text-slate-400">招待リンクを知っている人は編集できます。信頼する相手に共有してください。プラグインは各自で同じものを有効にしてください。ホストが退出するとルームは終了します。</p>
+                <div id="collabActiveSection" class="hidden flex flex-col gap-4">
+                    <div class="p-4 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> <span id="collabStatusText" role="status" aria-live="polite">共同編集中</span>
+                            </span>
+                            <span id="collabActiveRoomId" class="text-xs font-mono font-bold text-emerald-900 dark:text-emerald-200 px-2 py-0.5 rounded bg-emerald-200/60 dark:bg-emerald-900/60"></span>
+                        </div>
+                        <div class="flex gap-2 mt-1">
+                            <button id="collabCopyLinkBtn"
+                                class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-all shadow-sm">
+                                <i data-lucide="link" class="w-3.5 h-3.5"></i> 招待リンクをコピー
+                            </button>
+                            <button id="collabCopyIdBtn"
+                                class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-200 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 transition-all">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> IDコピー
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Member List -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">参加者</span>
+                        </div>
+                        <div id="collabUserList" class="flex flex-col gap-2 max-h-48 overflow-y-auto">
+                            <!-- Dynamic rendering -->
+                        </div>
+                    </div>
+
+                    <!-- Disconnect Button -->
+                    <button id="collabDisconnectBtn"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-900/60 rounded-xl transition-all">
+                        <i data-lucide="power" class="w-4 h-4"></i> 共同編集を切断する
+                    </button>
                 </div>
             </div>
         </div>

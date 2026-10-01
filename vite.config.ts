@@ -15,7 +15,7 @@ const getHtmlEntries = () => {
   return Object.fromEntries(
     htmlFiles.map((file) => {
       // ファイル名（パスを含む）をキーにする（例: "editor/index"）
-      const key = file.replace(/\.html$/, '');
+      const key = file.replace(/\\/g, '/').replace(/\.html$/, '');
       return [key, path.resolve(__dirname, file)];
     })
   );

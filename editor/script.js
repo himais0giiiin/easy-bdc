@@ -4,6 +4,8 @@
 
 import WorkspaceStorage from './storage.js';
 import { initShareFeature } from "./share.js";
+import { CollabManager } from "./collab.js";
+import { CollabUI } from "./collab-ui.js";
 import { PluginManager } from "./plugin.js";
 import { PluginUI, PLUGIN_FEATURE_TOGGLES_STORAGE_KEY } from "./plugin-ui.js";
 import { BlockSearch } from "./block-search.js";
@@ -467,6 +469,7 @@ const setupListManager = ({ workspace, storage, shareFeature, workspaceContainer
   workspaceContainer.appendChild(panel);
 
   const scheduleListSave = () => {
+    window.__edbb_collab?.manager.broadcastExtraChange({ [LIST_STORE_KEY]: listStore.toJSON(workspace) });
     storage?.save();
   };
 
@@ -673,6 +676,7 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
   };
 
   const scheduleSave = () => {
+    window.__edbb_collab?.manager.broadcastExtraChange({ [JSON_DATA_STORE_KEY]: jsonDataStore.toJSON() });
     hasPendingAutoSave = true;
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
@@ -1089,10 +1093,9 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
     if (hasJsonStore) {
       jsonDataStore.fromJSON(state?.[JSON_DATA_STORE_KEY]);
     } else {
-      const fallbackState = readJsonDatasetLocalState();
-      if (fallbackState) {
-        jsonDataStore.fromJSON(fallbackState);
-      }
+      // A project without embedded JSON data must not inherit another
+      // project's browser-local datasets.
+      jsonDataStore.fromJSON(null);
     }
     persistJsonDatasetLocalState();
     resolveDatasetSelection();
@@ -1378,6 +1381,12 @@ const initializeApp = async () => {
     workspace,
     storage,
   });
+
+  // --- リアルタイム共同編集機能の初期化 ---
+  const collabManager = new CollabManager(workspace);
+  const collabUI = new CollabUI(collabManager);
+  window.__edbb_collab = { manager: collabManager, ui: collabUI };
+  window.__edbb_storage = storage;
   setupListManager({
     workspace,
     storage,
@@ -1497,6 +1506,20 @@ const initializeApp = async () => {
       refreshLiveCodePreview();
     });
   };
+  collabManager.onStateChange((type, data) => {
+    if (type === 'workspace_updated') {
+      scheduleLiveCodeRefresh();
+      if (!shareFeature.isShareViewMode()) storage.save();
+      try { localStorage.setItem(PROJECT_TITLE_STORAGE_KEY, resolveProjectTitle()); } catch { /* optional */ }
+    }
+    if (type === 'status_change') {
+      const connecting = data.status === 'connecting';
+      // Keep the document intact but prevent unsent edits while the first snapshot is loading.
+      document.getElementById('blocklyDiv').inert = connecting;
+      const title = document.getElementById('projectTitleInput');
+      if (title) title.disabled = connecting;
+    }
+  });
   let splitViewActiveTab = 'code';
   const splitViewConsoleCloseBtn = document.getElementById('splitViewConsoleCloseBtn');
 
@@ -1710,14 +1733,30 @@ const initializeApp = async () => {
     shareFeature?.updateShareButtonState?.();
   };
   const originalDisable = pluginManager.disablePlugin.bind(pluginManager);
-  pluginManager.disablePlugin = async (id) => {
-    await originalDisable(id);
+  pluginManager.disablePlugin = async (id, options) => {
+    await originalDisable(id, options);
     pluginUIRef?.applyBlockVisibilityConfig?.();
     shareFeature?.updateShareButtonState?.();
   };
 
   const pluginUI = new PluginUI(pluginManager);
   pluginUIRef = pluginUI;
+  collabManager.setPluginManager(pluginManager);
+  const collabPluginPrompts = new Set();
+  collabManager.onStateChange(async (type, data) => {
+    if (type !== 'plugin_download_offer' && type !== 'plugin_request') return;
+    const plugin = data.plugin;
+    if (!plugin?.id) return;
+    const key = `${type}:${plugin.id}:${plugin.installRef || 'main'}`;
+    if (collabPluginPrompts.has(key)) return;
+    collabPluginPrompts.add(key);
+    try {
+      const installed = await pluginUI.confirmCollabPluginInstall(plugin, { requester: data.user });
+      if (installed) collabManager.pluginReady(plugin);
+    } finally {
+      collabPluginPrompts.delete(key);
+    }
+  });
   pluginManager.onPluginsSuggested((entries) => {
     pluginUI.handleBulkInstall(entries.join(','));
   });
@@ -1750,8 +1789,8 @@ const initializeApp = async () => {
       }
     };
     const originalDisable = pluginManager.disablePlugin.bind(pluginManager);
-    pluginManager.disablePlugin = async (id) => {
-      await originalDisable(id);
+    pluginManager.disablePlugin = async (id, options) => {
+      await originalDisable(id, options);
       await blockSearch.buildIndex();
       if (searchInput.value) {
         blockSearch.updateToolbox();
@@ -1766,6 +1805,8 @@ const initializeApp = async () => {
     storage?.load();
     // Keep block interactivity aligned with current (non-share) mode.
     shareFeature.applyUiState();
+    // Check URL params for realtime collab only after storage is restored
+    collabUI.checkUrlParams();
   }
 
   const toggleTheme = () => {
@@ -1789,16 +1830,18 @@ const initializeApp = async () => {
   const newProjectBtn = document.getElementById('newProjectBtn');
   newProjectBtn?.addEventListener('click', async () => {
     if (shareFeature.isShareViewMode()) return;
-    if (workspace.getAllBlocks(false).length === 0) {
-      showTopRightToast('ワークスペースは既に空です', { icon: 'info' });
-      return;
-    }
     const ok = await showConfirmDialog(
       '現在のブロックをすべて削除して新規プロジェクトを開始しますか？この操作は元に戻せません。',
       { icon: 'warning', confirmButtonText: '削除して新規作成' },
     );
     if (!ok) return;
     workspace.clear();
+    workspace.setExtraState?.({});
+    if (projectTitleInput) projectTitleInput.value = WorkspaceStorage.DEFAULT_TITLE;
+    try {
+      localStorage.setItem(PROJECT_TITLE_STORAGE_KEY, WorkspaceStorage.DEFAULT_TITLE);
+      localStorage.removeItem(JSON_GUI_DATASET_LOCAL_KEY);
+    } catch { /* optional local state */ }
     storage?.save();
     showTopRightToast('新規プロジェクトを開始しました', { icon: 'success' });
   });
@@ -1822,7 +1865,11 @@ const initializeApp = async () => {
     if (!file || !storage) return;
     storage
       .importFile(file)
-      .then(() => {
+      .then((imported) => {
+        if (!imported) {
+          showTopRightToast('プロジェクトを読み込めませんでした。現在の内容は保持されています。', { icon: 'error' });
+          return;
+        }
         // Imported JSON/XML may contain stale block flags.
         shareFeature.applyUiState();
         resizeWorkspace();
@@ -1997,9 +2044,7 @@ const initializeApp = async () => {
         console.warn('Runner console polling error:', error);
       }
       setRunnerConsoleState('Runner に接続できません');
-      if (runBotButtonState !== 'running') {
-        setRunBotButtonState('idle');
-      }
+      setRunBotButtonState('idle');
     } finally {
       if (session === runnerConsolePollSession) {
         runnerConsolePollInFlight = false;

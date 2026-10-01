@@ -168,3 +168,4 @@ dist
 
 ### Agents ###
 .agents
+.playwright-cli/

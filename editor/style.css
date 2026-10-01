@@ -1466,3 +1466,27 @@ button:active {
 .blocklyZoom {
   translate: 0 -35px;
 }
+
+/* ==========================================================================
+   Realtime Collaborative Editing Styles
+   ========================================================================== */
+@keyframes collab-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-fast {
+  animation: collab-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Remote selection outline transition */
+g.blocklyDraggable > path.blocklyPath {
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+

@@ -64,7 +64,8 @@ cd easy-bdc
 
 ## 🔌 プラグイン開発
 
-独自のブロックや機能を追加したい開発者の方は、[プラグイン開発ガイド](spec/Plugin.md) をご覧ください。
+独自のブロックや機能を追加したい開発者の方は、[プラグイン開発の入口](spec/Plugins.md) をご覧ください。
+新規プラグインの正本は [Plugin API 2.0 開発者ガイド](spec/Plugin-API-2.0.md) です。
 `manifest.json` の `pipInstall` は任意項目で、`pip install ○○` の `○○` だけを配列で記述します（`pip install` 自体は書かない）。
 
 ## 🌟 Star History

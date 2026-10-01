@@ -2,10 +2,22 @@
  * EDBP Plugin System
  * Plugin management with GitHub discovery, trust levels, and uninstallation.
  */
+import { createPluginAPI } from './plugin-api-v2.js';
+import {
+    safeParseJson,
+    normalizePluginManifest,
+    normalizePluginId,
+    createRegistryState,
+    resolvePluginOrder,
+    registryDiagnostics,
+    validatePluginManifestV2
+} from './plugin-registry-v2.js';
+
 const EDBB_CURRENT_APP_VERSION = '1.1.0';
 const EDBB_PLUGIN_VERSION_PATTERN = /^(\d+)\.(\d+)\.([01])$/;
 const EDBB_APP_VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)$/;
-const EDBB_SUPPORTED_PLUGIN_RUNTIMES = new Set(['0', '1']);
+// Plugin runtime 1 (PHP) was retired. Runtime 0 is the JavaScript plugin runtime.
+const EDBB_SUPPORTED_PLUGIN_RUNTIMES = new Set(['0']);
 const EDBB_GITHUB_MARKETPLACE_RATE_LIMIT_UNTIL_KEY = 'edbb_github_marketplace_rate_limited_until';
 
 const parsePluginVersion = (versionText) => {
@@ -36,7 +48,8 @@ if (EDBB_CURRENT_APP_VERSION_INFO === null) {
 }
 
 export class PluginManager {
-    /**
+
+/**
      * リトライ機能付きの fetch (タイムアウト制限付き)
      */
     async fetchWithRetry(url, options = {}, retries = 3, backoff = 500) {
@@ -77,6 +90,8 @@ export class PluginManager {
             ? window.fetch.bind(window)
             : (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
         this.plugins = new Map();
+        this.pluginApis = new Map();
+        this.commands = new Map();
         this.warnedDeprecatedLicenseKeys = new Set();
         this.externalDocDatasets = [
             {
@@ -104,8 +119,12 @@ export class PluginManager {
         if (Number.isFinite(persistedRateLimitUntil) && persistedRateLimitUntil > Date.now()) {
             this.githubMarketplaceRateLimitedUntil = persistedRateLimitUntil;
         }
-        // インストール済みプラグインのメタデータ
-        this.installedPlugins = JSON.parse(localStorage.getItem('edbb_installed_plugins') || '{}');
+        // インストール済みプラグインのメタデータ。壊れたJSONや古いIDはここで正規化する。
+        const storedPlugins = safeParseJson(localStorage.getItem('edbb_installed_plugins'), {});
+        const storedEnabled = safeParseJson(localStorage.getItem('edbb_enabled_plugins'), []);
+        const registryState = createRegistryState({ plugins: storedPlugins, enabled: storedEnabled });
+        this.installedPlugins = registryState.plugins;
+        this.registryWarnings = registryState.collisionWarnings;
 
         // データの移行: 文字列から 0(local)/1(github) へ
         let modified = false;
@@ -132,7 +151,7 @@ export class PluginManager {
         }
 
         // 有効化されているプラグインのID
-        this.enabledPlugins = new Set(JSON.parse(localStorage.getItem('edbb_enabled_plugins') || '[]'));
+        this.enabledPlugins = registryState.enabled;
 
         // 公認プラグインリストのキャッシュ
         this.certifiedPlugins = [];
@@ -188,11 +207,15 @@ export class PluginManager {
         this.plugins.forEach(p => {
             if (p && typeof p.onunload === 'function') p.onunload();
         });
+        this.pluginApis.forEach(api => api.dispose());
         this.plugins.clear();
+        this.pluginApis.clear();
+        this.commands.clear();
 
         // localStorageの関連項目を削除
         localStorage.removeItem('edbb_installed_plugins');
         localStorage.removeItem('edbb_enabled_plugins');
+        localStorage.removeItem('edbb_plugin_registry_schema');
 
         console.log('All plugin data has been completely removed.');
     }
@@ -220,7 +243,16 @@ export class PluginManager {
             console.warn('Failed to fetch blacklisted plugins list', e);
         }
 
-        for (const pluginId of Array.from(this.enabledPlugins)) {
+        let startup = resolvePluginOrder(this.installedPlugins, this.enabledPlugins);
+        if (startup.cycles.length || startup.missing.length) {
+            console.warn('Plugin dependency diagnostics', { cycles: startup.cycles, missing: startup.missing });
+            startup.cycles.flat().forEach(id => this.enabledPlugins.delete(id));
+            startup.missing.forEach(item => this.enabledPlugins.delete(item.plugin));
+            startup.missing.forEach(item => { if (item.requiredBy) this.enabledPlugins.delete(item.requiredBy); });
+            this.saveState();
+            startup = resolvePluginOrder(this.installedPlugins, this.enabledPlugins);
+        }
+        for (const pluginId of startup.order) {
             // テスト用プラグインは再読み込み時に自動で無効化する
             if (pluginId === 'test-danger' || pluginId === 'malicious-test-plugin') {
                 this.enabledPlugins.delete(pluginId);
@@ -501,6 +533,10 @@ export class PluginManager {
     }
 
     validateManifest(manifest) {
+        if (manifest && String(manifest.apiVersion || '').startsWith('2')) {
+            const result = validatePluginManifestV2(manifest, { currentAppVersion: EDBB_CURRENT_APP_VERSION });
+            return { valid: result.valid, missing: result.errors, errors: result.errors, warnings: result.warnings || [] };
+        }
         const required = ['name', 'version', 'author', 'affectsStyle', 'affectsBlocks', 'minAppVersion'];
         const missing = [];
 
@@ -509,6 +545,10 @@ export class PluginManager {
                 valid: false,
                 missing: ['manifest (object)']
             };
+        }
+
+        if (manifest.apiVersion !== undefined && !['1', '1.0', '1.1', '2.0', '2.0.0'].includes(String(manifest.apiVersion))) {
+            missing.push('apiVersion (unsupported version)');
         }
 
         required.forEach(field => {
@@ -530,15 +570,15 @@ export class PluginManager {
 
         if (manifest.minAppVersion !== undefined && manifest.minAppVersion !== null && manifest.minAppVersion !== '') {
             if (typeof manifest.minAppVersion !== 'string') {
-                missing.push('minAppVersion (must be a string in major.minor.runtime, runtime is 0=JavaScript or 1=PHP)');
+                missing.push('minAppVersion (must be a string in major.minor.runtime, runtime 0=JavaScript)');
             } else if (!parsedMinAppVersion) {
-                missing.push('minAppVersion (must be major.minor.runtime, runtime is 0=JavaScript or 1=PHP)');
+                missing.push('minAppVersion (must be major.minor.runtime, runtime 0=JavaScript)');
             }
         }
 
         if (parsedMinAppVersion) {
             if (!EDBB_SUPPORTED_PLUGIN_RUNTIMES.has(parsedMinAppVersion.runtime)) {
-                missing.push('minAppVersion runtime (must be 0=JavaScript or 1=PHP)');
+                missing.push('minAppVersion runtime (must be 0=JavaScript; PHP plugins are no longer supported)');
             }
 
             if (
@@ -1113,7 +1153,7 @@ export class PluginManager {
             const manifestText = await fetchRepoFile('manifest.json');
             if (!manifestText) throw new Error('manifest.json not found at repository root for selected ref');
 
-            const manifest = JSON.parse(manifestText);
+            const manifest = normalizePluginManifest(JSON.parse(manifestText), 'github');
 
             // バリデーションチェック (新規追加)
             const validation = this.validateManifest(manifest);
@@ -1125,7 +1165,7 @@ export class PluginManager {
                 manifest.uuid = this.generateUUID(manifest.author, manifest.name);
             }
 
-            const id = manifest.id || manifest.name.toLowerCase().replace(/\s+/g, '-');
+            const id = normalizePluginId(manifest.id || manifest.name);
             manifest.id = id;
             manifest.updateDate = new Date().toISOString().split('T')[0];
 
@@ -1174,6 +1214,8 @@ export class PluginManager {
         }
     }
     async uninstallPlugin(id) {
+        id = normalizePluginId(id);
+        this.assertNoEnabledDependents(id);
         await this.disablePlugin(id);
         delete this.installedPlugins[id];
         this.saveInstalledPlugins();
@@ -1198,7 +1240,7 @@ export class PluginManager {
             const manifestFile = zip.file("manifest.json");
             if (!manifestFile) throw new Error('manifest.json not found.');
             const manifestText = await manifestFile.async("string");
-            const manifest = JSON.parse(manifestText);
+            const manifest = normalizePluginManifest(JSON.parse(manifestText), 'local');
             manifest.trustLevel = this.getManifestTrustLevel(manifest);
             return manifest;
         } catch (error) {
@@ -1214,7 +1256,7 @@ export class PluginManager {
             if (!manifestFile) throw new Error('manifest.json not found.');
 
             const manifestText = await manifestFile.async("string");
-            const manifest = JSON.parse(manifestText);
+            const manifest = normalizePluginManifest(JSON.parse(manifestText), 'local');
 
             // バリデーションチェック (新規追加)
             const validation = this.validateManifest(manifest);
@@ -1230,7 +1272,7 @@ export class PluginManager {
                 manifest.uuid = this.generateUUID(manifest.author, manifest.name);
             }
 
-            const id = manifest.id || manifest.name.toLowerCase().replace(/\s+/g, '-');
+            const id = normalizePluginId(manifest.id || manifest.name);
             manifest.id = id;
             manifest.updateDate = new Date().toISOString().split('T')[0];
 
@@ -1269,6 +1311,21 @@ export class PluginManager {
 
         if (requiredPlugins.includes(pluginId)) {
             throw new Error('requiredPlugins must not include itself');
+        }
+    }
+
+    getEnabledDependents(pluginId) {
+        return Array.from(this.enabledPlugins).filter((id) => {
+            if (id === pluginId) return false;
+            const required = this.installedPlugins[id]?.requiredPlugins;
+            return Array.isArray(required) && required.map(normalizePluginId).includes(pluginId);
+        });
+    }
+
+    assertNoEnabledDependents(pluginId) {
+        const dependents = this.getEnabledDependents(normalizePluginId(pluginId));
+        if (dependents.length) {
+            throw new Error(`Disable dependent plugins first: ${dependents.join(', ')}`);
         }
     }
 
@@ -1376,6 +1433,7 @@ export class PluginManager {
     }
 
     async enablePlugin(id) {
+        id = normalizePluginId(id);
         if (this.plugins.has(id)) return;
 
         const pluginMeta = this.installedPlugins[id];
@@ -1386,30 +1444,43 @@ export class PluginManager {
             Object.keys((typeof Blockly !== 'undefined' && Blockly?.Blocks) ? Blockly.Blocks : {})
         );
         const restoreGuard = this.createPluginCapabilityGuard(pluginMeta);
+        let guardRestored = false;
+        const restoreCapabilityGuard = () => {
+            if (guardRestored) return;
+            guardRestored = true;
+            restoreGuard();
+        };
 
+        let pluginApi = null;
+        let pluginInstance = null;
+        const isV2 = String(pluginMeta.apiVersion || '').startsWith('2');
         try {
             if (pluginMeta.script) {
-                const pluginClass = new Function('workspace', `
+                pluginApi = isV2 ? createPluginAPI({ workspace: this.workspace, manifest: pluginMeta, manager: this }) : null;
+                pluginInstance = new Function('workspace', 'api', `
                     try {
                         ${pluginMeta.script}
                         if (typeof Plugin === 'undefined') {
                             throw new Error('Plugin class not defined in script');
                         }
-                        return new Plugin(workspace);
+                        return api ? new Plugin(api, workspace) : new Plugin(workspace);
                     } catch (e) {
                         console.error('Error executing plugin script:', e);
                         throw e;
                     }
-                `)(this.workspace);
+                `)(this.workspace, pluginApi);
 
-                if (pluginClass && typeof pluginClass.onload === 'function') {
-                    await pluginClass.onload();
+                // Do not keep application-wide monkey patches active across await points.
+                restoreCapabilityGuard();
+                if (pluginInstance && typeof pluginInstance.onload === 'function') {
+                    await pluginInstance.onload();
                 }
-                this.plugins.set(id, pluginClass);
+                this.plugins.set(id, pluginInstance);
+                if (pluginApi) this.pluginApis.set(id, pluginApi);
             } else if (pluginMeta.affectsStyle) {
                 this.plugins.set(id, { onunload: () => { } });
             }
-            restoreGuard();
+            restoreCapabilityGuard();
 
             const afterBlockTypes = Object.keys(
                 (typeof Blockly !== 'undefined' && Blockly?.Blocks) ? Blockly.Blocks : {}
@@ -1434,14 +1505,22 @@ export class PluginManager {
             this.enabledPlugins.add(id);
             this.saveState();
         } catch (e) {
-            restoreGuard();
+            if (pluginInstance && typeof pluginInstance.onunload === 'function') {
+                try { await pluginInstance.onunload(); } catch (cleanupError) { console.warn(`Failed to clean up plugin ${id}`, cleanupError); }
+            }
+            pluginApi?.dispose();
+            this.pluginApis.delete(id);
+            this.plugins.delete(id);
+            restoreCapabilityGuard();
             console.error(`Failed to enable plugin ${id}:`, e);
             throw e;
         }
 
     }
 
-    async disablePlugin(id) {
+    async disablePlugin(id, { allowDependents = false } = {}) {
+        id = normalizePluginId(id);
+        if (!allowDependents) this.assertNoEnabledDependents(id);
         const plugin = this.plugins.get(id);
         if (plugin) {
             if (typeof plugin.onunload === 'function') {
@@ -1449,24 +1528,67 @@ export class PluginManager {
             }
             this.plugins.delete(id);
         }
+        this.pluginApis.get(id)?.dispose();
+        this.pluginApis.delete(id);
         this.enabledPlugins.delete(id);
         this.saveState();
     }
 
     saveState() {
-        localStorage.setItem('edbb_enabled_plugins', JSON.stringify(Array.from(this.enabledPlugins)));
+        const validEnabled = Array.from(this.enabledPlugins).map(normalizePluginId).filter(id => this.installedPlugins[id]);
+        this.enabledPlugins = new Set(validEnabled);
+        localStorage.setItem('edbb_enabled_plugins', JSON.stringify(validEnabled));
     }
 
     saveInstalledPlugins() {
         localStorage.setItem('edbb_installed_plugins', JSON.stringify(this.installedPlugins));
+        localStorage.setItem('edbb_plugin_registry_schema', '2');
     }
 
+    getPluginDiagnostics() {
+        return registryDiagnostics({ plugins: this.installedPlugins, enabled: this.enabledPlugins }, EDBB_CURRENT_APP_VERSION);
+    }
+
+    getPluginLoadOrder() {
+        return resolvePluginOrder(this.installedPlugins, this.enabledPlugins).order;
+    }
+
+    repairPluginRegistry() {
+        const state = createRegistryState({ plugins: this.installedPlugins, enabled: Array.from(this.enabledPlugins) });
+        this.installedPlugins = state.plugins;
+        this.enabledPlugins = state.enabled;
+        this.saveInstalledPlugins();
+        this.saveState();
+        return this.getPluginDiagnostics();
+    }
+
+    registerCommand(id, command, owner) {
+        const key = String(id);
+        const existing = this.commands.get(key);
+        if (existing && existing.owner !== owner) throw new Error(`Command already registered by ${existing.owner}: ${key}`);
+        this.commands.set(key, { ...command, owner });
+    }
+
+    unregisterCommand(id, owner) {
+        const command = this.commands.get(String(id));
+        if (command?.owner === owner) this.commands.delete(String(id));
+    }
+
+    getCommand(id) { return this.commands.get(String(id)); }
+
+    getPluginAPI(id) { return this.pluginApis.get(id) || null; }
+
     getRegistry() {
+        const diagnostics = this.getPluginDiagnostics();
+        const invalidById = new Map(diagnostics.invalid.map(item => [item.id, item.errors]));
         return Object.values(this.installedPlugins).map(plugin => {
             // インストール済みデータから信頼レベルを再計算して付与（リスト更新反映のため）
             return {
                 ...plugin,
-                trustLevel: this.getManifestTrustLevel(plugin)
+                trustLevel: this.getManifestTrustLevel(plugin),
+                enabled: this.isPluginEnabled(plugin.id),
+                validationErrors: invalidById.get(plugin.id) || [],
+                apiVersion: plugin.apiVersion || '1.0'
             };
         });
     }
