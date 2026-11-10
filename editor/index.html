@@ -211,6 +211,8 @@
             <!-- Actions -->
             <div id="quickActions"
                 class="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <button id="undoBtn" type="button" class="editor-history-button" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" disabled><i data-lucide="undo-2" class="w-4 h-4"></i></button>
+                <button id="redoBtn" type="button" class="editor-history-button" title="やり直す (Ctrl+Shift+Z)" aria-label="やり直す" disabled><i data-lucide="redo-2" class="w-4 h-4"></i></button>
                 <button id="projectsBtn" type="button"
                     class="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
                     title="プロジェクト一覧・変更履歴" aria-label="プロジェクト一覧・変更履歴">
@@ -231,19 +233,9 @@
                     title="Save JSON">
                     <i data-lucide="download" class="w-5 h-5"></i>
                 </button>
-                <button id="jsonGuiBtn"
-                    class="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
-                    title="JSON GUIを開く">
-                    <i data-lucide="table-2" class="w-5 h-5"></i>
-                </button>
-
-                <div data-theme-divider class="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                <button id="themeToggle"
-                    class="p-2 text-slate-500 hover:text-amber-500 dark:text-slate-400 dark:hover:text-amber-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <i data-lucide="moon" class="hidden w-5 h-5 dark:block"></i>
-                    <i data-lucide="sun" class="block w-5 h-5 dark:hidden"></i>
-                </button>
             </div>
+
+            <button id="editorMoreBtn" type="button" class="editor-history-button" popovertarget="editorMorePopover" title="その他の操作" aria-label="その他の操作"><i data-lucide="ellipsis" class="w-5 h-5"></i></button>
 
             <input type="file" id="importInput" accept=".json,.xml" class="hidden">
             <input type="file" id="pluginInstallInput" accept=".zip" class="hidden">
@@ -288,6 +280,21 @@
             </button>
         </div>
     </header>
+
+    <div id="editorMorePopover" popover aria-label="その他の操作">
+        <button id="templatesBtn" type="button" class="editor-menu-item" title="テンプレートギャラリー" aria-label="テンプレートギャラリー"><i data-lucide="layout-template" class="w-4 h-4"></i><span>テンプレートギャラリー</span></button>
+        <button id="editorSettingsBtn" type="button" class="editor-menu-item" title="エディタ設定" aria-label="エディタ設定"><i data-lucide="settings" class="w-4 h-4"></i><span>エディタ設定</span></button>
+        <button id="jsonGuiBtn"
+                    class="editor-menu-item"
+                    title="JSON GUIを開く">
+                    <i data-lucide="table-2" class="w-5 h-5"></i>
+                <span>JSONを編集</span></button>
+        <button id="themeToggle"
+                    class="editor-menu-item">
+                    <i data-lucide="moon" class="hidden w-5 h-5 dark:block"></i>
+                    <i data-lucide="sun" class="block w-5 h-5 dark:hidden"></i>
+                <span>テーマ切替</span></button>
+    </div>
 
     <!-- Main Workspace -->
     <main class="relative w-full h-full overflow-hidden flex-grow flex">
@@ -575,6 +582,10 @@
             </div>
             <div id="mobileProjectTitleSlot"></div>
             <div class="mobile-menu-grid">
+                <button id="mobileUndoBtn" type="button"><i data-lucide="undo-2"></i><span>元に戻す</span></button>
+                <button id="mobileRedoBtn" type="button"><i data-lucide="redo-2"></i><span>やり直す</span></button>
+                <button id="mobileTemplatesBtn" type="button"><i data-lucide="layout-template"></i><span>テンプレート</span></button>
+                <button id="mobileEditorSettingsBtn" type="button"><i data-lucide="settings"></i><span>設定</span></button>
                 <button id="mobileProjectsBtn" type="button"><i data-lucide="folder-open"></i><span>プロジェクト・履歴</span></button>
                 <button id="mobilePluginBtn" type="button"><i data-lucide="puzzle"></i><span>プラグイン</span></button>
                 <button id="mobileShareBtn" type="button"><i data-lucide="share-2"></i><span>共有リンク</span></button>
@@ -583,7 +594,7 @@
                 <button id="mobileThemeBtn" type="button"><i data-lucide="sun-moon"></i><span>テーマ切替</span></button>
                 <a href="../terms.html" target="_blank" rel="noopener"><i data-lucide="file-text"></i><span>利用規約</span></a>
             </div>
-            <p class="mobile-menu-note">テーマ切替はプラグイン設定で有効にできます。画面分割・Botの直接起動はPC専用です。スマホでは「生成」からコードを取得できます。</p>
+            <p class="mobile-menu-note">検索・テーマボタンの表示は設定から変更できます。画面分割・Botの直接起動はPC専用です。スマホでは「生成」からコードを取得できます。</p>
         </div>
     </div>
 
@@ -1093,7 +1104,7 @@
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Plugin Settings</h2>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white" id="editorSettingsTitle">設定</h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Target: <span
                                 id="pluginSettingsTargetLabel">-</span></p>
                     </div>

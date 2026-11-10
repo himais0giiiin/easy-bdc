@@ -536,6 +536,8 @@ export class PluginUI {
 
     openSettingsModal(pluginId = null) {
         this.settingsTargetPluginId = pluginId;
+        const heading = document.getElementById('editorSettingsTitle');
+        if (heading) heading.textContent = pluginId ? 'プラグイン設定' : 'エディタ設定';
         if (!this.settingsModal) return;
         this.renderSettingsList();
         this.settingsModal.classList.remove('hidden');
@@ -557,6 +559,7 @@ export class PluginUI {
 
         this.settingsModal.setAttribute('aria-hidden', 'true');
         setTimeout(() => {
+            if (this.settingsModal?.classList.contains('show-modal')) return;
             this.settingsModal?.classList.remove('flex');
             this.settingsModal?.classList.add('hidden');
         }, 300);
@@ -578,9 +581,9 @@ export class PluginUI {
 
     getDefaultPluginFeatureToggles() {
         return {
-            blockSearch: false,
+            blockSearch: true,
             zipInstall: false,
-            darkModeButton: false
+            darkModeButton: true
         };
     }
 
@@ -591,9 +594,9 @@ export class PluginUI {
             if (!raw) return defaults;
             const parsed = JSON.parse(raw);
             return {
-                blockSearch: Boolean(parsed?.blockSearch),
+                blockSearch: typeof parsed?.blockSearch === 'boolean' ? parsed.blockSearch : defaults.blockSearch,
                 zipInstall: Boolean(parsed?.zipInstall),
-                darkModeButton: Boolean(parsed?.darkModeButton)
+                darkModeButton: typeof parsed?.darkModeButton === 'boolean' ? parsed.darkModeButton : defaults.darkModeButton
             };
         } catch (error) {
             return defaults;
@@ -700,7 +703,7 @@ export class PluginUI {
         const pluginId = this.settingsTargetPluginId;
         const titleEl = document.getElementById('pluginSettingsTargetLabel');
         if (!pluginId) {
-            if (titleEl) titleEl.textContent = 'Global';
+            if (titleEl) titleEl.textContent = 'エディタ設定';
             const toggles = this.pluginFeatureToggles || this.getDefaultPluginFeatureToggles();
             this.settingsList.innerHTML = `
                 <div class="grid grid-cols-1 gap-3">
@@ -729,7 +732,7 @@ export class PluginUI {
                         </span>
                     </label>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">デフォルトは全てOFFです。</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">検索とテーマボタンは既定でONです。設定はこのブラウザに保存されます。</p>
             `;
             this.settingsList.querySelectorAll('input[data-feature-toggle]').forEach((el) => {
                 el.addEventListener('change', (event) => {

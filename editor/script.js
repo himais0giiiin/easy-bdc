@@ -15,6 +15,7 @@ import { MOBILE_MEDIA_QUERY } from './mobile.js';
 import { createToolboxIcon } from './toolbox-icons.js';
 import { startAppUpdater } from './app-update.js';
 import { setupProjectUI } from './project-ui.js';
+import { setupEditorActions } from './editor-actions.js';
 
 const PROJECT_TITLE_STORAGE_KEY = 'edbb_project_title';
 
@@ -1815,13 +1816,9 @@ const initializeApp = async () => {
   // 検索バーの表示・非表示をツールボックスに連動させる
   const isBlockSearchFeatureEnabled = () => {
     try {
-      const raw = localStorage.getItem(PLUGIN_FEATURE_TOGGLES_STORAGE_KEY);
-      if (!raw) return false;
-      const parsed = JSON.parse(raw);
-      return Boolean(parsed?.blockSearch);
-    } catch (_) {
-      return false;
-    }
+      const parsed = JSON.parse(localStorage.getItem(PLUGIN_FEATURE_TOGGLES_STORAGE_KEY) || '{}');
+      return typeof parsed?.blockSearch === 'boolean' ? parsed.blockSearch : true;
+    } catch (_) { return true; }
   };
 
   const updateSearchVisibility = () => {
@@ -1872,6 +1869,7 @@ const initializeApp = async () => {
 
   const pluginUI = new PluginUI(pluginManager);
   pluginUIRef = pluginUI;
+  setupEditorActions({ workspace, shareFeature, collabManager, pluginUI });
   collabManager.setPluginManager(pluginManager);
   const collabPluginPrompts = new Set();
   collabManager.onStateChange(async (type, data) => {
@@ -1932,7 +1930,7 @@ const initializeApp = async () => {
 
   // --- Load Saved Data ---
   const projects = setupProjectUI({ workspace, storage, shareFeature, collabManager,
-    onLoad: () => { scheduleLiveCodeRefresh(); resizeWorkspace(); } });
+    onLoad: () => { scheduleLiveCodeRefresh(); resizeWorkspace(); window.dispatchEvent(new Event('edbb-workspace-loaded')); } });
   window.__edbb_projects = projects;
   const sharedApplied = await shareFeature.applySharedLayoutFromQuery();
   if (!sharedApplied) {
