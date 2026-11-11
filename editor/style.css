@@ -408,7 +408,7 @@ svg[display='none'] {
 }
 
 /* Compact desktop header for low-height or narrow desktop windows (e.g. 1080x675, 1280x800) */
-@media (min-width: 768px) and ((max-width: 1360px) or (max-height: 860px)) {
+@media (min-width: 768px) and ((max-width: 1600px) or (max-height: 860px)) {
   .glass-header {
     gap: 10px;
     padding: 10px 14px !important;

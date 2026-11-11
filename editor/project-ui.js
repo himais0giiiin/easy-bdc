@@ -1,4 +1,5 @@
 import { ProjectLibrary } from './projects.js';
+import { BOT_TEMPLATES, templateState } from './templates.js';
 import { showConfirmDialog, showPromptDialog, showTopRightToast } from './core/ui.js';
 
 export const element = (tag, text, className = '') => {
@@ -103,10 +104,20 @@ export function setupProjectUI({ workspace, storage, shareFeature, collabManager
     const historyTab = button('変更履歴', () => { tab = 'history'; render(); });
     projectsTab.setAttribute('aria-pressed', String(tab === 'projects'));
     historyTab.setAttribute('aria-pressed', String(tab === 'history'));
-    tabs.append(projectsTab, historyTab); ui.body.append(tabs);
+    const templatesTab = button('テンプレート', () => { tab = 'templates'; render(); });
+    templatesTab.setAttribute('aria-pressed', String(tab === 'templates'));
+    tabs.append(projectsTab, historyTab, templatesTab); ui.body.append(tabs);
     ui.body.append(element('p', 'このブラウザに保存します。履歴は各プロジェクトの直近30件です。', 'project-muted'));
     if (!library) return;
-    if (tab === 'projects') {
+    if (tab === 'templates') {
+      ui.body.append(element('p', '現在の作品を保存して、新しいプロジェクトを作成します。追加プラグインは不要です。', 'project-muted'));
+      for (const template of BOT_TEMPLATES) {
+        const row = element('article', null, 'project-card');
+        row.append(element('h3', template.title), element('p', template.summary), element('p', template.guide, 'project-muted'));
+        row.append(button('このテンプレートで作成', run(() => create(template.title, templateState(template.id))), locked));
+        ui.body.append(row);
+      }
+    } else if (tab === 'projects') {
       const form = element('form', null, 'project-toolbar');
       const input = element('input'); input.placeholder = '新しいプロジェクト名'; input.maxLength = 64;
       input.setAttribute('aria-label', '新しいプロジェクト名'); input.disabled = locked;
@@ -178,6 +189,9 @@ export function setupProjectUI({ workspace, storage, shareFeature, collabManager
   window.addEventListener('beforeunload', () => { if (!loading) storage.save(); });
   document.getElementById('projectsBtn').addEventListener('click', run(() => {
     if (!blocked()) save(); render(); ui.open();
+  }));
+  document.getElementById('templatesBtn')?.addEventListener('click', run(() => {
+    if (!blocked()) save(); tab = 'templates'; render(); ui.open();
   }));
   document.getElementById('newProjectBtn').addEventListener('click', run(async () => {
     guard();

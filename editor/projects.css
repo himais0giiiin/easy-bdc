@@ -30,3 +30,23 @@
   .project-button { min-height: 42px; }
 }
 body:has(.project-dialog[open]) #docsbotai-root { visibility: hidden !important; pointer-events: none !important; }
+
+/* Secondary actions use a top-layer popover so the editor keeps its height. */
+.editor-history-button { display: inline-flex; align-items: center; justify-content: center; padding: 8px; border: 0; border-radius: 6px; color: #64748b; background: transparent; flex-shrink: 0; }
+.editor-history-button:hover:not(:disabled) { background: #f1f5f9; color: #4f46e5; }
+.editor-history-button:disabled { opacity: .4; cursor: not-allowed; }
+.editor-history-button:focus-visible, .editor-menu-item:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+#editorMorePopover { position: fixed; inset: auto; margin: 0; padding: 6px; min-width: 210px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #334155; box-shadow: 0 12px 36px #02061726; }
+.editor-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 7px; background: transparent; text-align: left; font-size: 13px; }
+.editor-menu-item:hover { background: #eef2ff; color: #4338ca; }
+#editorMorePopover #themeToggle { border: 0; background: transparent; }
+.dark #editorMorePopover { background: #0f172a; color: #cbd5e1; border-color: #334155; }
+.dark .editor-history-button { color: #94a3b8; }
+.dark .editor-history-button:hover:not(:disabled), .dark .editor-menu-item:hover { background: #1e293b; color: #a5b4fc; }
+@media (min-width: 768px) {
+  html:not(.is-mobile) body > header { flex-wrap: nowrap; }
+  html:not(.is-mobile) body > header > .flex.items-center.gap-4 { flex-shrink: 0; }
+  html:not(.is-mobile) body > header h1 { white-space: nowrap; }
+  html:not(.is-mobile) #headerActions { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; gap: 8px; }
+  html:not(.is-mobile) #headerActions > * { flex-shrink: 0; }
+}

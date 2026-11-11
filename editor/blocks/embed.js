@@ -10,18 +10,21 @@ export function initEmbeds() {
     };
     Blockly.Python.forBlock['create_embed'] = function (block) {
         const embedVarName = Blockly.Python.nameDB_.getDistinctName('embed', Blockly.Names.VARIABLE_NAME);
-        let code = `${embedVarName} = discord.Embed(title="No Title", description="...", color=0x3498DB)\n`;
+        // Value generators must return an expression, including property mutations.
+        const expressions = [];
         const propertiesCode = Blockly.Python.statementToCode(block, 'PROPERTIES');
-        const lines = propertiesCode.split('\n');
-        for (const line of lines) {
-            if (!line.trim()) continue;
-            if (line.includes('# EMBED_VAR_PLACEHOLDER')) {
-                code += line.replace(/# EMBED_VAR_PLACEHOLDER/g, embedVarName) + '\n';
-            } else if (line.trim().startsWith('embed.')) {
-                code += line.replace(/embed\./g, `${embedVarName}.`) + '\n';
+        for (const line of propertiesCode.split('\n')) {
+            const property = line.trim().replace(/# EMBED_VAR_PLACEHOLDER/g, 'embed');
+            const assignment = property.match(/^embed\.(\w+)\s*=\s*(.*)$/);
+            if (assignment) {
+                expressions.push(`setattr(${embedVarName}, ${JSON.stringify(assignment[1])}, ${assignment[2]})`);
+            } else if (property.startsWith('embed.')) {
+                expressions.push(property.replace(/^embed\./, `${embedVarName}.`));
             }
         }
-        return [`${code}${embedVarName}`, Blockly.Python.ORDER_ATOMIC];
+        expressions.push(embedVarName);
+        const initial = 'discord.Embed(title="No Title", description="...", color=0x3498DB)';
+        return [`((lambda ${embedVarName}: (${expressions.join(', ')},)[-1])(${initial}))`, Blockly.Python.ORDER_ATOMIC];
     };
 
     Blockly.Blocks['set_embed_property'] = {

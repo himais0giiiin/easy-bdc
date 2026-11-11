@@ -1,4 +1,8 @@
 export const MOBILE_ACTION_TARGETS = Object.freeze({
+  mobileUndoBtn: 'undoBtn',
+  mobileRedoBtn: 'redoBtn',
+  mobileTemplatesBtn: 'templatesBtn',
+  mobileEditorSettingsBtn: 'editorSettingsBtn',
   mobileNewProjectBtn: 'newProjectBtn',
   mobileProjectsBtn: 'projectsBtn',
   mobileImportBtn: 'importBtn',
