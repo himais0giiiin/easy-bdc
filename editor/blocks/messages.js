@@ -1,3 +1,4 @@
+import { createBlockIcon } from './icons.js';
 export function initMessages() {
     Blockly.Blocks['get_message_content'] = {
         init: function () {
@@ -32,7 +33,7 @@ export function initMessages() {
 
     Blockly.Blocks['reply_message'] = {
         init: function () {
-            this.appendValueInput('MESSAGE').setCheck(['String', 'Embed']).appendField('↩️ 返信する');
+            this.appendValueInput('MESSAGE').setCheck(['String', 'Embed']).appendField(createBlockIcon('↩️')).appendField('返信する');
             this.appendDummyInput()
                 .appendField('自分だけに表示')
                 .appendField(new Blockly.FieldCheckbox('FALSE'), 'EPHEMERAL');
@@ -55,7 +56,7 @@ export function initMessages() {
 
     Blockly.Blocks['send_dm'] = {
         init: function () {
-            this.appendValueInput('USER_ID').setCheck('String').appendField('📩 DMを送信 (ユーザーID');
+            this.appendValueInput('USER_ID').setCheck('String').appendField(createBlockIcon('📩')).appendField('DMを送信 (ユーザーID');
             this.appendValueInput('MESSAGE').setCheck(['String', 'Embed']).appendField(') 内容');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -77,7 +78,7 @@ export function initMessages() {
     Blockly.Blocks['defer_reply'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('⏳ 応答を保留する (考え中...)')
+                .appendField(createBlockIcon('⏳')).appendField('応答を保留する (考え中...)')
                 .appendField('自分だけ')
                 .appendField(new Blockly.FieldCheckbox('FALSE'), 'EPHEMERAL');
             this.setPreviousStatement(true, null);
@@ -92,7 +93,7 @@ export function initMessages() {
 
     Blockly.Blocks['edit_reply'] = {
         init: function () {
-            this.appendValueInput('MESSAGE').setCheck(['String', 'Embed']).appendField('✏️ 返信を編集する');
+            this.appendValueInput('MESSAGE').setCheck(['String', 'Embed']).appendField(createBlockIcon('✏️')).appendField('返信を編集する');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(160);
@@ -111,7 +112,7 @@ export function initMessages() {
 
     Blockly.Blocks['edit_message_by_id'] = {
         init: function () {
-            this.appendValueInput('CHANNEL_ID').setCheck('String').appendField('✏️ 編集: チャンネルID');
+            this.appendValueInput('CHANNEL_ID').setCheck('String').appendField(createBlockIcon('✏️')).appendField('編集: チャンネルID');
             this.appendValueInput('MESSAGE_ID').setCheck('String').appendField('メッセージID');
             this.appendValueInput('CONTENT').setCheck('String').appendField('新しい内容');
             this.setPreviousStatement(true, null);
@@ -149,7 +150,7 @@ export function initMessages() {
 
     Blockly.Blocks['delete_message'] = {
         init: function () {
-            this.appendDummyInput().appendField('🗑️ このメッセージを削除');
+            this.appendDummyInput().appendField(createBlockIcon('🗑️')).appendField('このメッセージを削除');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(160);
@@ -161,7 +162,7 @@ export function initMessages() {
 
     Blockly.Blocks['purge_messages'] = {
         init: function () {
-            this.appendValueInput('LIMIT').setCheck('Number').appendField('🗑️ メッセージを一括削除（');
+            this.appendValueInput('LIMIT').setCheck('Number').appendField(createBlockIcon('🗑️')).appendField('メッセージを一括削除（');
             this.appendDummyInput().appendField('件）');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -175,7 +176,7 @@ export function initMessages() {
 
     Blockly.Blocks['pin_message'] = {
         init: function () {
-            this.appendDummyInput().appendField('📌 このメッセージをピン留め');
+            this.appendDummyInput().appendField(createBlockIcon('📌')).appendField('このメッセージをピン留め');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(160);
@@ -187,7 +188,7 @@ export function initMessages() {
 
     Blockly.Blocks['add_reaction'] = {
         init: function () {
-            this.appendValueInput('EMOJI').setCheck('String').appendField('👍 リアクションを付ける');
+            this.appendValueInput('EMOJI').setCheck('String').appendField(createBlockIcon('👍')).appendField('リアクションを付ける');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(160);
@@ -200,7 +201,7 @@ export function initMessages() {
 
     Blockly.Blocks['create_thread'] = {
         init: function () {
-            this.appendValueInput('NAME').setCheck('String').appendField('🧵 スレッドを作成（名前');
+            this.appendValueInput('NAME').setCheck('String').appendField(createBlockIcon('🧵')).appendField('スレッドを作成（名前');
             this.appendDummyInput().appendField('）');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -214,7 +215,7 @@ export function initMessages() {
 
     Blockly.Blocks['wait_for_message'] = {
         init: function () {
-            this.appendValueInput('TIMEOUT').setCheck('Number').appendField('⏳ 返信を待つ (最大');
+            this.appendValueInput('TIMEOUT').setCheck('Number').appendField(createBlockIcon('⏳')).appendField('返信を待つ (最大');
             this.appendDummyInput().appendField('秒)');
             this.setOutput(true, 'String');
             this.setColour(290);

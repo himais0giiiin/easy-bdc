@@ -1,9 +1,10 @@
+import { createBlockIcon } from './icons.js';
 import { FieldListDropdown, LIST_VARIABLE_EMPTY_ID } from './core.js';
 
 export function initLists() {
     Blockly.Blocks['empty_list_create'] = {
         init: function () {
-            this.appendDummyInput().appendField('📋 空のリストを作成');
+            this.appendDummyInput().appendField(createBlockIcon('📋')).appendField('空のリストを作成');
             this.setOutput(true, 'Array');
             this.setColour(210);
         },
@@ -15,7 +16,7 @@ export function initLists() {
     Blockly.Blocks['list_variable_get'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('📋 リスト変数')
+                .appendField(createBlockIcon('📋')).appendField('リスト変数')
                 .appendField(new FieldListDropdown(), 'VAR');
             this.setOutput(true, 'Array');
             this.setColour(210);
@@ -56,7 +57,7 @@ export function initLists() {
 
     Blockly.Blocks['random_choice'] = {
         init: function () {
-            this.appendValueInput('LIST').setCheck('Array').appendField('🎲 リスト');
+            this.appendValueInput('LIST').setCheck('Array').appendField(createBlockIcon('🎲')).appendField('リスト');
             this.appendDummyInput().appendField('からランダムに1つ選ぶ');
             this.setOutput(true, null);
             this.setColour(230);

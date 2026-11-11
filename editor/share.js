@@ -13,7 +13,7 @@ const BLOCKLY_CAPTURE_EXTRA_CSS = [
 
 const SHARE_THUMBNAIL_PADDING = 32;
 const SHARE_THUMBNAIL_MIN_DIMENSION = 64;
-const SHARE_THUMBNAIL_WATERMARK_SRC = '/static/c-by-EDBB.svg';
+const SHARE_THUMBNAIL_WATERMARK_SRC = new URL('../public/static/c-by-EDBB.svg', import.meta.url).href;
 
 // ローカルストレージを使った共有設定の永続化を行うクラス
 class SharePreferenceManager {

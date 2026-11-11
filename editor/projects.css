@@ -1,0 +1,52 @@
+.project-dialog {
+  width: min(720px, calc(100vw - 24px)); max-height: min(85dvh, 850px);
+  padding: 0; border: 1px solid #cbd5e1; border-radius: 18px;
+  color: #0f172a; background: #fff; box-shadow: 0 24px 70px #02061755;
+}
+.project-dialog::backdrop { background: #0f172aaa; backdrop-filter: blur(5px); }
+.project-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid #e2e8f0; }
+.project-dialog h2 { font-size: 18px; font-weight: 700; }
+.project-dialog h3 { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.project-dialog-body { padding: 18px 22px; }
+.project-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.project-button { border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; background: #f8fafc; }
+.project-button:hover:not(:disabled), .project-button[aria-pressed=true] { background: #eef2ff; color: #4338ca; border-color: #818cf8; }
+.project-button:disabled { opacity: .45; cursor: not-allowed; }
+.project-button:focus-visible, .project-dialog input:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+.project-dialog input:not([type=checkbox]) { min-width: 0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; background: transparent; font-size: 14px; }
+.project-toolbar input:not([type=checkbox]) { flex: 1; }
+.project-card { padding: 16px; margin: 12px 0; border: 1px solid #e2e8f0; border-radius: 12px; }
+.project-muted { color: #64748b; font-size: 12px; line-height: 1.7; }
+.project-notice:not(:empty) { margin: 12px 22px 0; border-radius: 8px; background: #fef3c7; color: #92400e; padding: 10px; font-size: 13px; }
+.dark .project-dialog { color: #e2e8f0; background: #0f172a; border-color: #334155; }
+.dark .project-card, .dark .project-dialog-heading { border-color: #334155; }
+.dark .project-muted { color: #94a3b8; }
+.dark .project-button { background: #1e293b; border-color: #475569; }
+.dark .project-button:hover:not(:disabled), .dark .project-button[aria-pressed=true] { background: #312e81; color: #c7d2fe; }
+@media (max-width: 767px) {
+  .project-dialog { max-height: 90dvh; }
+  .project-dialog-heading, .project-dialog-body { padding: 16px; }
+  .project-dialog input:not([type=checkbox]) { font-size: 16px; }
+  .project-button { min-height: 42px; }
+}
+body:has(.project-dialog[open]) #docsbotai-root { visibility: hidden !important; pointer-events: none !important; }
+
+/* Secondary actions use a top-layer popover so the editor keeps its height. */
+.editor-history-button { display: inline-flex; align-items: center; justify-content: center; padding: 8px; border: 0; border-radius: 6px; color: #64748b; background: transparent; flex-shrink: 0; }
+.editor-history-button:hover:not(:disabled) { background: #f1f5f9; color: #4f46e5; }
+.editor-history-button:disabled { opacity: .4; cursor: not-allowed; }
+.editor-history-button:focus-visible, .editor-menu-item:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+#editorMorePopover { position: fixed; inset: auto; margin: 0; padding: 6px; min-width: 210px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #334155; box-shadow: 0 12px 36px #02061726; }
+.editor-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 7px; background: transparent; text-align: left; font-size: 13px; }
+.editor-menu-item:hover { background: #eef2ff; color: #4338ca; }
+#editorMorePopover #themeToggle { border: 0; background: transparent; }
+.dark #editorMorePopover { background: #0f172a; color: #cbd5e1; border-color: #334155; }
+.dark .editor-history-button { color: #94a3b8; }
+.dark .editor-history-button:hover:not(:disabled), .dark .editor-menu-item:hover { background: #1e293b; color: #a5b4fc; }
+@media (min-width: 768px) {
+  html:not(.is-mobile) body > header { flex-wrap: nowrap; }
+  html:not(.is-mobile) body > header > .flex.items-center.gap-4 { flex-shrink: 0; }
+  html:not(.is-mobile) body > header h1 { white-space: nowrap; }
+  html:not(.is-mobile) #headerActions { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; gap: 8px; }
+  html:not(.is-mobile) #headerActions > * { flex-shrink: 0; }
+}

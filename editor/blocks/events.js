@@ -1,11 +1,12 @@
-import { getBranchCode } from './core.js';
+import { createBlockIcon } from './icons.js';
+import { applyEventBlockStyle, getBranchCode } from './core.js';
 
 export function initEvents() {
     Blockly.Blocks['on_ready'] = {
         init: function () {
-            this.appendDummyInput().appendField('🏁 Botが起動したとき');
+            this.appendDummyInput().appendField(createBlockIcon('🏁')).appendField('Botが起動したとき');
             this.appendStatementInput('DO').setCheck(null).appendField('実行する処理');
-            this.setColour(30);
+            applyEventBlockStyle(this, 30);
             this.setTooltip('Botのログインが完了し、準備ができた時に1回だけ実行されます。');
         },
     };
@@ -16,9 +17,9 @@ export function initEvents() {
 
     Blockly.Blocks['on_message_create'] = {
         init: function () {
-            this.appendDummyInput().appendField('📩 メッセージを受信したとき');
+            this.appendDummyInput().appendField(createBlockIcon('📩')).appendField('メッセージを受信したとき');
             this.appendStatementInput('DO').setCheck(null).appendField('実行する処理');
-            this.setColour(30);
+            applyEventBlockStyle(this, 30);
             this.setTooltip('誰かがメッセージを送信した時に実行されます。');
         },
     };
@@ -29,9 +30,9 @@ export function initEvents() {
 
     Blockly.Blocks['on_member_join'] = {
         init: function () {
-            this.appendDummyInput().appendField('👤 メンバーが参加したとき');
+            this.appendDummyInput().appendField(createBlockIcon('👤')).appendField('メンバーが参加したとき');
             this.appendStatementInput('DO').setCheck(null).appendField('実行する処理');
-            this.setColour(30);
+            applyEventBlockStyle(this, 30);
             this.setTooltip('新しいメンバーがサーバーに参加した時に実行されます。');
         },
     };
@@ -42,9 +43,9 @@ export function initEvents() {
 
     Blockly.Blocks['on_member_remove'] = {
         init: function () {
-            this.appendDummyInput().appendField('👋 メンバーが退出したとき');
+            this.appendDummyInput().appendField(createBlockIcon('👋')).appendField('メンバーが退出したとき');
             this.appendStatementInput('DO').setCheck(null).appendField('実行する処理');
-            this.setColour(30);
+            applyEventBlockStyle(this, 30);
             this.setTooltip('メンバーがサーバーから退出（またはKick/Ban）された時に実行されます。');
         },
     };
@@ -55,7 +56,7 @@ export function initEvents() {
 
     Blockly.Blocks['on_reaction_add'] = {
         init: function () {
-            this.appendDummyInput().appendField('⭐ リアクションが付いたとき');
+            this.appendDummyInput().appendField(createBlockIcon('⭐')).appendField('リアクションが付いたとき');
             this.appendDummyInput()
                 .appendField('メッセージID(任意):')
                 .appendField(new Blockly.FieldTextInput(''), 'MESSAGE_ID');
@@ -63,7 +64,7 @@ export function initEvents() {
                 .appendField('絵文字(任意):')
                 .appendField(new Blockly.FieldTextInput(''), 'EMOJI');
             this.appendStatementInput('DO').setCheck(null).appendField('実行する処理');
-            this.setColour(30);
+            applyEventBlockStyle(this, 30);
         },
     };
     Blockly.Python.forBlock['on_reaction_add'] = function (block) {

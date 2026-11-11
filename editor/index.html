@@ -57,7 +57,7 @@
 
     <title>Easy Discord Bot Builder</title>
 
-    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="./assets/edbb-logo.svg">
 
     <!-- Tailwind CSS (JIT) - Note: CDN warning in console is expected during development. 
          For production builds, use Tailwind CLI: https://tailwindcss.com/docs/installation -->
@@ -102,9 +102,8 @@
     <script src="https://unpkg.com/blockly@11.2.2/blockly.min.js"></script>
     <script src="https://unpkg.com/blockly@11.2.2/python_compressed.js"></script>
     <script src="https://unpkg.com/blockly@11.2.2/msg/ja.js"></script>
-    <script src="https://unpkg.com/@blockly/field-multilineinput@4.0.4/dist/index.js"></script>
+    <script src="https://unpkg.com/@blockly/field-multilineinput@5.0.17/dist/index.js"></script>
     <script type="module" src="./mobile.js"></script>
-    <script type="module" src="./plugin-mobile.js"></script>
     <link rel="stylesheet" href="./mobile.css">
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -134,6 +133,7 @@
 
 
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./projects.css">
 </head>
 
 <body
@@ -166,7 +166,7 @@
                 </div>
                 <div
                     class="relative bg-white dark:bg-slate-900 p-2.5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center">
-                    <img src="/static/icon.svg" alt="EDBB" class="w-6 h-6">
+                    <img src="./assets/edbb-logo.svg" alt="EDBB" class="w-6 h-6">
                 </div>
             </div>
             <div class="flex flex-col">
@@ -180,11 +180,6 @@
             </div>
         </div>
 
-        <button id="mobileHeaderToggle"
-            class="hidden items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 shadow-sm">
-            <i data-lucide="chevrons-down-up" class="w-4 h-4"></i>
-            <span id="mobileHeaderToggleText">操作を表示</span>
-        </button>
 
         <div id="headerActions" class="flex items-center gap-3">
             <div class="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-1 hidden md:block"></div>
@@ -209,13 +204,20 @@
                 class="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm w-52 max-w-[240px]">
                 <label for="projectTitleInput"
                     class="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">タイトル</label>
-                <input id="projectTitleInput" type="text" value="edbb-project"
+                <input id="projectTitleInput" type="text" value="edbb-project" maxlength="64"
                     class="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md px-2 py-1 border border-slate-200 dark:border-slate-700">
             </div>
 
             <!-- Actions -->
             <div id="quickActions"
                 class="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <button id="undoBtn" type="button" class="editor-history-button" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" disabled><i data-lucide="undo-2" class="w-4 h-4"></i></button>
+                <button id="redoBtn" type="button" class="editor-history-button" title="やり直す (Ctrl+Shift+Z)" aria-label="やり直す" disabled><i data-lucide="redo-2" class="w-4 h-4"></i></button>
+                <button id="projectsBtn" type="button"
+                    class="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
+                    title="プロジェクト一覧・変更履歴" aria-label="プロジェクト一覧・変更履歴">
+                    <i data-lucide="folder-open" class="w-5 h-5"></i>
+                </button>
                 <button id="newProjectBtn"
                     class="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
                     title="新規プロジェクト">
@@ -231,22 +233,13 @@
                     title="Save JSON">
                     <i data-lucide="download" class="w-5 h-5"></i>
                 </button>
-                <button id="jsonGuiBtn"
-                    class="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
-                    title="JSON GUIを開く">
-                    <i data-lucide="table-2" class="w-5 h-5"></i>
-                </button>
-
-                <div data-theme-divider class="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                <button id="themeToggle"
-                    class="p-2 text-slate-500 hover:text-amber-500 dark:text-slate-400 dark:hover:text-amber-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <i data-lucide="moon" class="hidden w-5 h-5 dark:block"></i>
-                    <i data-lucide="sun" class="block w-5 h-5 dark:hidden"></i>
-                </button>
             </div>
+
+            <button id="editorMoreBtn" type="button" class="editor-history-button" popovertarget="editorMorePopover" title="その他の操作" aria-label="その他の操作"><i data-lucide="ellipsis" class="w-5 h-5"></i></button>
 
             <input type="file" id="importInput" accept=".json,.xml" class="hidden">
             <input type="file" id="pluginInstallInput" accept=".zip" class="hidden">
+
 
             <!-- Share Button -->
             <button id="shareBtn"
@@ -288,6 +281,21 @@
         </div>
     </header>
 
+    <div id="editorMorePopover" popover aria-label="その他の操作">
+        <button id="templatesBtn" type="button" class="editor-menu-item" title="テンプレートギャラリー" aria-label="テンプレートギャラリー"><i data-lucide="layout-template" class="w-4 h-4"></i><span>テンプレートギャラリー</span></button>
+        <button id="editorSettingsBtn" type="button" class="editor-menu-item" title="エディタ設定" aria-label="エディタ設定"><i data-lucide="settings" class="w-4 h-4"></i><span>エディタ設定</span></button>
+        <button id="jsonGuiBtn"
+                    class="editor-menu-item"
+                    title="JSON GUIを開く">
+                    <i data-lucide="table-2" class="w-5 h-5"></i>
+                <span>JSONを編集</span></button>
+        <button id="themeToggle"
+                    class="editor-menu-item">
+                    <i data-lucide="moon" class="hidden w-5 h-5 dark:block"></i>
+                    <i data-lucide="sun" class="block w-5 h-5 dark:hidden"></i>
+                <span>テーマ切替</span></button>
+    </div>
+
     <!-- Main Workspace -->
     <main class="relative w-full h-full overflow-hidden flex-grow flex">
         <div id="workspace-container">
@@ -325,6 +333,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div id="workspaceResizeHandle" role="separator" aria-label="ブロックとコードの表示幅を調整"
+                aria-orientation="vertical" aria-valuemin="30" aria-valuemax="75" aria-valuenow="55" tabindex="0">
+                <span aria-hidden="true"></span>
             </div>
 
             <!-- Live Code Preview (Split Mode Only) -->
@@ -521,6 +534,17 @@
             <category name="繰り返し" data-icon="🔄" colour="#5b67a5">
                 <block type="controls_repeat_ext"></block>
                 <block type="controls_whileUntil"></block>
+                <block type="controls_flow_statements">
+                    <field name="FLOW">BREAK</field>
+                </block>
+                <block type="controls_flow_statements">
+                    <field name="FLOW">CONTINUE</field>
+                </block>
+            </category>
+
+            <category name="制御フロー" data-icon="↩️" colour="#9b59b6">
+                <block type="flow_return"></block>
+                <block type="flow_return_value"></block>
             </category>
 
             <category name="算術・乱数" data-icon="🔢" colour="#5b80a5">
@@ -540,13 +564,47 @@
         </xml>
     </main>
 
+    <nav id="mobileActionDock" class="hidden" aria-label="スマホ用クイック操作">
+        <button id="mobileNewProjectBtn" type="button"><i data-lucide="file-plus-2"></i><span>新規</span></button>
+        <button id="mobileImportBtn" type="button"><i data-lucide="upload"></i><span>読込</span></button>
+        <button id="mobileExportBtn" type="button"><i data-lucide="download"></i><span>保存</span></button>
+        <button id="mobileShowCodeBtn" type="button"><i data-lucide="code-2"></i><span>生成</span></button>
+        <button id="mobileMoreBtn" type="button" aria-haspopup="dialog" aria-controls="mobileActionsModal" aria-expanded="false"><i data-lucide="ellipsis"></i><span>その他</span></button>
+    </nav>
+
+    <!-- All mobile header actions are reached from the bottom dock. -->
+    <div id="mobileActionsModal" class="modal-backdrop hidden fixed inset-0 z-[60] items-end justify-center bg-slate-900/60 backdrop-blur-sm"
+        role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="mobileActionsTitle">
+        <div class="mobile-menu-content">
+            <div class="mobile-menu-heading">
+                <h2 id="mobileActionsTitle">その他の操作</h2>
+                <button id="mobileActionsCloseBtn" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+            </div>
+            <div id="mobileProjectTitleSlot"></div>
+            <div class="mobile-menu-grid">
+                <button id="mobileUndoBtn" type="button"><i data-lucide="undo-2"></i><span>元に戻す</span></button>
+                <button id="mobileRedoBtn" type="button"><i data-lucide="redo-2"></i><span>やり直す</span></button>
+                <button id="mobileTemplatesBtn" type="button"><i data-lucide="layout-template"></i><span>テンプレート</span></button>
+                <button id="mobileEditorSettingsBtn" type="button"><i data-lucide="settings"></i><span>設定</span></button>
+                <button id="mobileProjectsBtn" type="button"><i data-lucide="folder-open"></i><span>プロジェクト・履歴</span></button>
+                <button id="mobilePluginBtn" type="button"><i data-lucide="puzzle"></i><span>プラグイン</span></button>
+                <button id="mobileShareBtn" type="button"><i data-lucide="share-2"></i><span>共有リンク</span></button>
+                <button id="mobileCollabBtn" type="button"><i data-lucide="users"></i><span>共同編集</span></button>
+                <button id="mobileJsonGuiBtn" type="button"><i data-lucide="table-2"></i><span>JSON編集</span></button>
+                <button id="mobileThemeBtn" type="button"><i data-lucide="sun-moon"></i><span>テーマ切替</span></button>
+                <a href="../terms.html" target="_blank" rel="noopener"><i data-lucide="file-text"></i><span>利用規約</span></a>
+            </div>
+            <p class="mobile-menu-note">検索・テーマボタンの表示は設定から変更できます。画面分割・Botの直接起動はPC専用です。スマホでは「生成」からコードを取得できます。</p>
+        </div>
+    </div>
+
     <!-- Code Generation Modal -->
     <div id="codeModal"
         class="modal-backdrop hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div
             class="flex flex-col w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl bg-white dark:bg-slate-900 modal-content border border-white/20 dark:border-slate-700/50 ring-1 ring-black/5">
             <!-- Modal Header -->
-            <div
+            <div id="codeModalHeader"
                 class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
                 <div class="flex items-center gap-3">
                     <div class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
@@ -568,7 +626,7 @@
                         <i data-lucide="folder-archive" class="w-4 h-4"></i>
                         <span>ZIP DL</span>
                     </button>
-                    <button id="closeModalBtn"
+                    <button id="closeModalBtn" aria-label="閉じる"
                         class="p-2 transition-all rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
@@ -746,7 +804,7 @@
         </div>
     </div>
 
-    <div id="jsonGuiModal"
+    <div id="jsonGuiModal" role="dialog" aria-modal="true" aria-labelledby="jsonGuiTitle"
         class="modal-backdrop hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
         aria-hidden="true">
         <div
@@ -758,29 +816,29 @@
                         <i data-lucide="table-2" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">JSONデータエディタ</h2>
+                        <h2 id="jsonGuiTitle" class="text-lg font-bold text-slate-900 dark:text-white">JSONデータエディタ</h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Botで使うデータを表形式でかんたんに作成・編集できます</p>
                     </div>
                 </div>
-                <button id="jsonGuiModalClose"
+                <button id="jsonGuiModalClose" aria-label="JSONエディタを閉じる"
                     class="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div class="flex-1 min-h-0 overflow-hidden grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div class="json-gui__body flex-1 min-h-0 overflow-hidden grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
                 <aside
                     class="min-h-0 border-r border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/30 p-4 flex flex-col gap-3 overflow-y-auto">
-                    <div class="text-[11px] uppercase tracking-widest font-semibold text-slate-500 dark:text-slate-400">
+                    <label for="jsonGuiDatasetSelect" class="text-[11px] uppercase tracking-widest font-semibold text-slate-500 dark:text-slate-400">
                         データセット
-                    </div>
+                    </label>
                     <select id="jsonGuiDatasetSelect"
                         class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </select>
-                    <div class="grid grid-cols-1 gap-2">
+                    <div class="json-gui__dataset-actions grid grid-cols-1 gap-2">
                         <button id="jsonGuiAddDatasetBtn" type="button"
                             class="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
                             <i data-lucide="plus" class="w-4 h-4"></i>
-                            <span>データセット追加</span>
+                            <span>追加</span>
                         </button>
                         <button id="jsonGuiRenameDatasetBtn" type="button"
                             class="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -803,7 +861,7 @@
                         <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-xs text-indigo-900 dark:text-indigo-200">
                             <span class="inline-flex items-center gap-1.5">
                                 <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px]">1</span>
-                                データセットを選ぶ（左）
+                                データセットを選ぶ
                             </span>
                             <span class="inline-flex items-center gap-1.5">
                                 <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px]">2</span>
@@ -840,8 +898,8 @@
                         <span id="jsonGuiError"
                             class="hidden text-xs text-rose-600 dark:text-rose-300 rounded-lg border border-rose-200 dark:border-rose-700 px-3 py-2 bg-rose-50 dark:bg-rose-900/20"></span>
                     </div>
-                    <div
-                        class="shrink-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+                    <details class="json-gui__preview shrink-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+                        <summary>保存されるJSONを見る</summary>
                         <div class="flex items-center justify-between gap-2 mb-2">
                             <div
                                 class="text-[11px] uppercase tracking-widest font-semibold text-slate-500 dark:text-slate-400">
@@ -853,12 +911,12 @@
                                 <span>コピー</span>
                             </button>
                         </div>
-                        <textarea id="jsonGuiPreview" readonly
+                        <textarea id="jsonGuiPreview" readonly aria-label="保存されるJSONのプレビュー"
                             class="w-full min-h-[180px] rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-200"></textarea>
                         <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
                             入力した内容は自動保存されます。この画面を閉じてもデータは残ります。
                         </p>
-                    </div>
+                    </details>
                 </section>
             </div>
             <div
@@ -1046,7 +1104,7 @@
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Plugin Settings</h2>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white" id="editorSettingsTitle">設定</h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Target: <span
                                 id="pluginSettingsTargetLabel">-</span></p>
                     </div>
@@ -1102,6 +1160,11 @@
                 <div
                     class="w-80 border-r border-slate-100 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-950/20">
                     <div class="p-4 border-b border-slate-100 dark:border-slate-800">
+                        <label id="pluginMobileSearchField" class="hidden mb-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                            プラグインを検索
+                            <input id="pluginMobileSearchInput" type="search" placeholder="名前・開発者・タグ"
+                                class="mt-2 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-base text-slate-700 dark:text-slate-200">
+                        </label>
                         <div class="flex items-center justify-between">
                             <span
                                 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">インストール済みのみ表示</span>
@@ -1415,7 +1478,7 @@
                 <!-- Image -->
                 <div id="runnerDownloadImageContainer"
                     class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 overflow-hidden flex justify-center items-center h-80">
-                    <img id="runnerDownloadImage" src="../static/edbb-runner-howto.gif"
+                    <img id="runnerDownloadImage" src="/static/edbb-runner-howto.gif"
                         class="max-w-full max-h-full object-contain" alt="edbb-runner 使い方">
                 </div>
 
@@ -1530,6 +1593,14 @@
                 if (maybePromise && typeof maybePromise.then === 'function') {
                     maybePromise.then(() => {
                         window.__edbb_docsbot_init_done = true;
+                        const host = document.getElementById('docsbotai-root');
+                        const shadow = host?.shadowRoot;
+                        if (shadow && !shadow.getElementById('edbb-docsbot-mobile-style')) {
+                            const style = document.createElement('style');
+                            style.id = 'edbb-docsbot-mobile-style';
+                            style.textContent = '@media (max-width: 767px) { .floating-button { right: 12px !important; bottom: calc(90px + env(safe-area-inset-bottom)) !important; } }';
+                            shadow.appendChild(style);
+                        }
                     }).catch((error) => {
                         window.__edbb_docsbot_init_done = false;
                         console.warn('DocsBotAI init failed:', error);

@@ -23,6 +23,9 @@ export const setupBlocklyEnvironment = () => {
       weight: '600',
       size: 12,
     },
+    blockStyles: {
+      hat_blocks: { colourPrimary: '#d97706', colourSecondary: '#f59e0b' },
+    },
   });
 
   const modernDarkTheme = Blockly.Theme.defineTheme('modernDark', {
