@@ -1406,6 +1406,10 @@ export class PluginManager {
         };
     }
 
+    // 注意: これはマニフェストの申告漏れを見つけるための「簡易チェック」であり、
+    // セキュリティ境界ではない。プラグインは new Function でエディタ本体と同じ権限で
+    // 動くため、文字列連結や別名経由のアクセスでこの検査は回避できる。
+    // 悪意あるプラグインを止めるには iframe sandbox / Worker への隔離が必要。
     validatePluginScriptCapabilities(pluginMeta) {
         const script = String(pluginMeta?.script || '');
         if (!script.trim()) return;
@@ -1425,9 +1429,14 @@ export class PluginManager {
         }
 
         if (!pluginMeta?.api) {
-            const apiPattern = /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b/;
+            const apiPattern = /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|\bsendBeacon\b|\bRTCPeerConnection\b|\bimportScripts\b|\bimport\s*\(/;
             if (apiPattern.test(script)) {
                 throw new Error('This plugin script uses external API/network features but "api" is not declared.');
+            }
+            // 検査をすり抜ける典型的な手段 (動的なコード生成) も、通信を申告していないプラグインでは拒否する
+            const dynamicCodePattern = /\beval\s*\(|\bnew\s+Function\b|\bFunction\s*\(|\bset(?:Timeout|Interval)\s*\(\s*['"`]/;
+            if (dynamicCodePattern.test(script)) {
+                throw new Error('This plugin script uses dynamic code execution (eval / new Function) but "api" is not declared.');
             }
         }
     }

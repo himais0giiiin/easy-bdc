@@ -365,6 +365,10 @@ export class PluginUI {
     init() {
         this.btn.addEventListener('click', () => this.open());
         this.closeBtn.addEventListener('click', () => this.close());
+        document.getElementById('pluginMobileBackBtn')?.addEventListener('click', () => this.showEmptyDetail());
+        document.getElementById('pluginMobileSearchInput')?.addEventListener('input', (event) => {
+            this.setSearchQuery(event.target.value, { focus: false });
+        });
         const headerSettingsBtn = document.getElementById('pluginHeaderSettingsBtn');
         headerSettingsBtn?.addEventListener('click', () => this.openSettingsModal(null));
 
@@ -532,6 +536,8 @@ export class PluginUI {
 
     openSettingsModal(pluginId = null) {
         this.settingsTargetPluginId = pluginId;
+        const heading = document.getElementById('editorSettingsTitle');
+        if (heading) heading.textContent = pluginId ? 'プラグイン設定' : 'エディタ設定';
         if (!this.settingsModal) return;
         this.renderSettingsList();
         this.settingsModal.classList.remove('hidden');
@@ -553,6 +559,7 @@ export class PluginUI {
 
         this.settingsModal.setAttribute('aria-hidden', 'true');
         setTimeout(() => {
+            if (this.settingsModal?.classList.contains('show-modal')) return;
             this.settingsModal?.classList.remove('flex');
             this.settingsModal?.classList.add('hidden');
         }, 300);
@@ -574,9 +581,9 @@ export class PluginUI {
 
     getDefaultPluginFeatureToggles() {
         return {
-            blockSearch: false,
+            blockSearch: true,
             zipInstall: false,
-            darkModeButton: false
+            darkModeButton: true
         };
     }
 
@@ -587,9 +594,9 @@ export class PluginUI {
             if (!raw) return defaults;
             const parsed = JSON.parse(raw);
             return {
-                blockSearch: Boolean(parsed?.blockSearch),
+                blockSearch: typeof parsed?.blockSearch === 'boolean' ? parsed.blockSearch : defaults.blockSearch,
                 zipInstall: Boolean(parsed?.zipInstall),
-                darkModeButton: Boolean(parsed?.darkModeButton)
+                darkModeButton: typeof parsed?.darkModeButton === 'boolean' ? parsed.darkModeButton : defaults.darkModeButton
             };
         } catch (error) {
             return defaults;
@@ -696,7 +703,7 @@ export class PluginUI {
         const pluginId = this.settingsTargetPluginId;
         const titleEl = document.getElementById('pluginSettingsTargetLabel');
         if (!pluginId) {
-            if (titleEl) titleEl.textContent = 'Global';
+            if (titleEl) titleEl.textContent = 'エディタ設定';
             const toggles = this.pluginFeatureToggles || this.getDefaultPluginFeatureToggles();
             this.settingsList.innerHTML = `
                 <div class="grid grid-cols-1 gap-3">
@@ -725,7 +732,7 @@ export class PluginUI {
                         </span>
                     </label>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">デフォルトは全てOFFです。</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">検索とテーマボタンは既定でONです。設定はこのブラウザに保存されます。</p>
             `;
             this.settingsList.querySelectorAll('input[data-feature-toggle]').forEach((el) => {
                 el.addEventListener('change', (event) => {
@@ -1108,6 +1115,7 @@ export class PluginUI {
     }
 
     showEmptyDetail() {
+        this.modal.classList.remove('detail-open');
         this.currentDetailPluginKey = null;
         this.updateSidebarSelectionState();
         this.pluginDetailContent.classList.add('hidden');
@@ -1151,8 +1159,7 @@ export class PluginUI {
         const searchInput = this.pluginDetailEmpty.querySelector('#pluginSearchFromDetailInput');
         if (searchInput) {
             searchInput.addEventListener('input', (event) => {
-                this.searchQuery = String(event.target?.value || '');
-                this.renderMarketplace();
+                this.setSearchQuery(event.target?.value, { focus: false });
             });
         }
         this.pluginDetailEmpty.querySelectorAll('[data-quick-query]').forEach((button) => {
@@ -1171,13 +1178,13 @@ export class PluginUI {
         lucide.createIcons();
     }
 
-    setSearchQuery(query) {
+    setSearchQuery(query, { focus = true } = {}) {
         this.searchQuery = String(query || '');
         const searchInput = this.pluginDetailEmpty?.querySelector('#pluginSearchFromDetailInput');
-        if (searchInput) {
-            searchInput.value = this.searchQuery;
-            searchInput.focus();
-        }
+        const mobileInput = document.getElementById('pluginMobileSearchInput');
+        if (searchInput) searchInput.value = this.searchQuery;
+        if (mobileInput) mobileInput.value = this.searchQuery;
+        if (focus) (this.isMobileDevice() ? mobileInput : searchInput)?.focus();
         this.renderMarketplace();
     }
 
@@ -1557,6 +1564,8 @@ export class PluginUI {
     }
 
     async renderMarketplace() {
+        const renderVersion = (this.marketplaceRenderVersion || 0) + 1;
+        this.marketplaceRenderVersion = renderVersion;
         this.pluginList.innerHTML = '';
         const installed = this.pluginManager.getRegistry();
         const filter = this.parseQuery(this.searchQuery);
@@ -1582,9 +1591,11 @@ export class PluginUI {
             this.pluginList.appendChild(header);
 
             const results = await this.pluginManager.searchGitHubPlugins();
+            if (this.marketplaceRenderVersion !== renderVersion) return;
             this.githubResults = results;
             if (filter.tags.length > 0 || filter.text.length > 0) {
                 await this.enrichGitHubPluginsWithManifestTags(results);
+                if (this.marketplaceRenderVersion !== renderVersion) return;
             } else {
                 void this.enrichGitHubPluginsWithManifestTags(results);
             }
@@ -1861,8 +1872,17 @@ export class PluginUI {
         }
     }
 
+    openMobileDetail() {
+        if (!this.isMobileDevice()) return;
+        this.modal.classList.add('detail-open');
+        const detail = document.getElementById('pluginDetail');
+        if (detail) detail.scrollTop = 0;
+    }
+
     async showGitHubDetail(plugin) {
         this.currentDetailPluginKey = this.getPluginSelectionKey(plugin, false);
+        this.openMobileDetail();
+        const selectedKey = this.currentDetailPluginKey;
         this.updateSidebarSelectionState();
         this.pluginDetailEmpty.classList.add('hidden');
         this.pluginDetailContent.classList.remove('hidden');
@@ -1879,10 +1899,15 @@ export class PluginUI {
             try {
                 // タイムアウト付きのフェッチ (5秒)
                 const fetchWithTimeout = async (promise, timeout = 5000) => {
-                    return Promise.race([
-                        promise,
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-                    ]);
+                    let timer;
+                    try {
+                        return await Promise.race([
+                            promise,
+                            new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Timeout')), timeout); })
+                        ]);
+                    } finally {
+                        clearTimeout(timer);
+                    }
                 };
 
                 const safeFetch = async (promise, fallback = null) => {
@@ -1916,6 +1941,8 @@ export class PluginUI {
             readme = plugin.description || 'テスト用プラグインのデモページです。';
         }
 
+        // Ignore an old request if the user went back or selected another item.
+        if (this.currentDetailPluginKey !== selectedKey) return;
         const level = plugin.trustLevel?.level ?? plugin.trustLevel;
         const badges = [];
         if (plugin.author === 'EDBPlugin' || level === 'official') {
@@ -2156,6 +2183,7 @@ export class PluginUI {
 
     showDetail(plugin) {
         this.currentDetailPluginKey = this.getPluginSelectionKey(plugin, true);
+        this.openMobileDetail();
         this.updateSidebarSelectionState();
         this.pluginDetailEmpty.classList.add('hidden');
         this.pluginDetailContent.classList.remove('hidden');
@@ -2680,11 +2708,10 @@ export class PluginUI {
         if (typeof marked === 'undefined') return this.escapeHtml(markdown);
 
         // marked.js のオプション設定
+        // (headerIds / mangle は marked v8 で廃止されたため指定しない)
         marked.setOptions({
             gfm: true,
-            breaks: true,
-            headerIds: true,
-            mangle: false
+            breaks: true
         });
 
         // marked.js を使用して Markdown を HTML に変換
@@ -2693,14 +2720,36 @@ export class PluginUI {
 
         // DOMPurify を使用して安全な HTML にサニタイズ
         if (typeof DOMPurify !== 'undefined') {
-            return DOMPurify.sanitize(rawHtml, {
-                // GitHubのREADMEでよく使われるタグと属性を許可
-                ADD_TAGS: ['div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'span', 'img', 'a', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code', 'pre', 'blockquote', 'hr', 'details', 'summary', 'b', 'i', 'strong', 'em', 'del', 'center'],
-                ADD_ATTR: ['class', 'style', 'src', 'href', 'target', 'alt', 'width', 'height', 'align', 'valign', 'border'],
-                // インラインスタイルを許可 (中央揃えなどに必要)
-                FORBID_ATTR: [],
-                FORBID_TAGS: []
-            });
+            // README は第三者が書いた内容なので、エディタの画面を偽装できる属性は通さない。
+            // style はもちろん、class も Tailwind のユーティリティ (fixed / inset-0 / z-50 など) で
+            // 画面全体を覆う偽UIを作れてしまうため、コードブロックの language-* だけ残す。
+            const hardenAttributes = (node) => {
+                if (typeof node.getAttribute !== 'function') return;
+                if (node.hasAttribute('class')) {
+                    const kept = String(node.getAttribute('class') || '')
+                        .split(/\s+/)
+                        .filter((name) => /^language-[\w-]+$/.test(name));
+                    if (kept.length > 0) node.setAttribute('class', kept.join(' '));
+                    else node.removeAttribute('class');
+                }
+                if (node.tagName === 'A' && node.hasAttribute('target')) {
+                    node.setAttribute('target', '_blank');
+                    node.setAttribute('rel', 'noopener noreferrer');
+                }
+            };
+            DOMPurify.addHook('afterSanitizeAttributes', hardenAttributes);
+            try {
+                return DOMPurify.sanitize(rawHtml, {
+                    // GitHubのREADMEでよく使われるタグと属性を許可
+                    ADD_TAGS: ['div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'span', 'img', 'a', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code', 'pre', 'blockquote', 'hr', 'details', 'summary', 'b', 'i', 'strong', 'em', 'del', 'center'],
+                    // 中央揃えは align 属性で表現できる (GitHub 本体も README の style は除去する)
+                    ADD_ATTR: ['class', 'src', 'href', 'target', 'alt', 'width', 'height', 'align', 'valign', 'border'],
+                    FORBID_ATTR: ['style'],
+                    FORBID_TAGS: ['style', 'form', 'input', 'button', 'textarea', 'select']
+                });
+            } finally {
+                DOMPurify.removeHook('afterSanitizeAttributes');
+            }
         }
         return this.escapeHtml(markdown);
     }

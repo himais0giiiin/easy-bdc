@@ -1,26 +1,14 @@
-.blocklyMobileInput {
-  color: transparent;
-  caret-color: black;
-  background: transparent;
-  border: none;
-  outline: none;
-  position: absolute;
-  z-index: 99999;
-}
-
-.blocklyMobileInput::selection {
-  background: transparent;
-}
-
-.blocklyMobileInput::target-text {
-  background: transparent;
-}
-
-.blocklyMobileInput::-internal-autofill-selected {
-  background: transparent;
+html.is-mobile .blocklyHtmlInput {
+  /* Keep native input/textarea text and selection visible and avoid focus zoom. */
+  font-size: max(16px, 1em) !important;
+  min-height: 40px;
 }
 
 /* --- Plugin Modal Mobile Optimization --- */
+html.is-mobile #pluginMobileSearchField {
+  display: block;
+}
+
 html.is-mobile #pluginModal>div {
   max-width: none !important;
   width: 100% !important;
@@ -32,13 +20,16 @@ html.is-mobile #pluginModal>div {
 html.is-mobile #pluginModal .flex.flex-1 {
   flex-direction: column !important;
   position: relative;
+  min-height: 0;
+  min-width: 0;
 }
 
 html.is-mobile #pluginModal .w-80 {
   width: 100% !important;
   border-right: none !important;
   flex: 1;
-  display: block;
+  display: flex;
+  min-height: 0;
 }
 
 html.is-mobile #pluginModal.detail-open .w-80 {
@@ -48,6 +39,8 @@ html.is-mobile #pluginModal.detail-open .w-80 {
 html.is-mobile #pluginDetail {
   padding: 1.5rem !important;
   display: none;
+  min-height: 0;
+  min-width: 0;
 }
 
 html.is-mobile #pluginModal.detail-open #pluginDetail {
@@ -110,6 +103,7 @@ html.is-mobile #installFromGhBtn {
 /* Modal Header Fixes */
 html.is-mobile #pluginModal .flex.items-center.justify-between.px-6.py-4 {
   padding: 1rem !important;
+  flex-shrink: 0;
 }
 
 html.is-mobile #pluginModal h2 {

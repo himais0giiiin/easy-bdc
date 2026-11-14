@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Easy Discord Bot Builder 利用規約">
+  <title>利用規約 - Easy Discord Bot Builder</title>
+  <link rel="icon" type="image/svg+xml" href="./editor/assets/edbb-logo.svg">
+  <style>
+    :root { color-scheme: light dark; --bg:#f5f7fb; --card:#fff; --text:#142033; --muted:#5d6b7f; --line:#dce3ed; --accent:#087ea4; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#07111f; --card:#101c2d; --text:#edf5ff; --muted:#a8b5c7; --line:#26364b; --accent:#49c6ef; } }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif; line-height:1.8; }
+    header { position:sticky; top:0; z-index:10; border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter:blur(14px); }
+    .bar, main { width:min(900px, calc(100% - 32px)); margin:auto; }
+    .bar { min-height:64px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    a { color:var(--accent); }
+    .brand { color:var(--text); font-weight:800; text-decoration:none; }
+    main { padding:48px 0 80px; }
+    article { padding:clamp(22px,5vw,52px); border:1px solid var(--line); border-radius:24px; background:var(--card); box-shadow:0 24px 60px rgba(0,0,0,.08); }
+    h1 { margin:0; font-size:clamp(2rem,6vw,3.4rem); line-height:1.15; }
+    h2 { margin:2.4rem 0 .8rem; padding-bottom:.4rem; border-bottom:1px solid var(--line); font-size:1.25rem; }
+    p, li { color:var(--muted); }
+    .meta { margin:1rem 0 2.5rem; font-size:.9rem; }
+    .notice { padding:16px 18px; border-left:4px solid var(--accent); border-radius:10px; background:color-mix(in srgb, var(--accent) 10%, transparent); }
+    nav ul { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:6px 20px; padding-left:1.2rem; }
+    footer { margin-top:32px; color:var(--muted); text-align:center; font-size:.82rem; }
+    @media (max-width:600px) { .bar { min-height:56px; } main { padding-top:20px; } article { border-radius:16px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <a class="brand" href="./index.html">Easy Discord Bot Builder</a>
+      <a href="./editor/index.html">エディタへ戻る</a>
+    </div>
+  </header>
+  <main>
+    <article>
+      <h1>利用規約</h1>
+      <p class="meta">制定日: 2026年10月1日 / 適用開始日: 2026年11月1日</p>
+      <p class="notice">本規約は Easy Discord Bot Builder（以下「EDBB」）の利用条件を定めます。EDBBはDiscord Inc.とは独立したオープンソースプロジェクトであり、Discord公式サービスではありません。</p>
+
+      <nav aria-label="目次">
+        <h2>目次</h2>
+        <ul>
+          <li><a href="#scope">適用と同意</a></li><li><a href="#requirements">利用条件</a></li>
+          <li><a href="#prohibited">禁止事項</a></li><li><a href="#generated">生成コード</a></li>
+          <li><a href="#security">認証情報と安全管理</a></li><li><a href="#plugins">プラグイン等</a></li>
+          <li><a href="#data">データの取扱い</a></li><li><a href="#rights">権利関係</a></li>
+          <li><a href="#availability">提供の変更・停止</a></li><li><a href="#disclaimer">免責と責任制限</a></li>
+        </ul>
+      </nav>
+
+      <section id="scope"><h2>第1条（適用と同意）</h2><p>本規約は、ウェブ版、配布ファイル、生成機能、共同編集、プラグイン機能その他EDBBが提供する機能に適用されます。利用者は、EDBBを利用した時点で本規約に同意したものとみなされます。同意できない場合は利用を中止してください。</p></section>
+      <section id="requirements"><h2>第2条（利用条件）</h2><p>利用者は、適用法令、所属するサーバーの規則、およびDiscordの<a href="https://discord.com/terms" target="_blank" rel="noopener">利用規約</a>、コミュニティガイドライン、<a href="https://support-dev.discord.com/hc/en-us/articles/8563934450327-Discord-Developer-Policy" target="_blank" rel="noopener">Discord Developer Policy</a>等を守るものとします。Discordを利用できる年齢その他の条件もDiscordの定めに従います。</p></section>
+      <section id="prohibited"><h2>第3条（禁止事項）</h2><p>利用者は、EDBBを次の目的または方法で利用してはなりません。</p><ul><li>スパム、無差別な大量送信、レイド、嫌がらせ、なりすましまたは不正なエンゲージメント</li><li>Discordのユーザーアカウントを自動操作するセルフBot、トークン生成・収集、認証回避または不正アクセス</li><li>マルウェア、情報窃取、脆弱性の悪用、第三者の権利侵害または法令違反</li><li>必要な同意なく個人情報やメッセージ内容を収集、保存、公開または第三者提供する行為</li><li>EDBB、共同編集相手、外部サービスまたは第三者の運用を妨害する行為</li></ul></section>
+      <section id="generated"><h2>第4条（生成コードとBotの運用）</h2><p>生成コードは作成支援のための出力であり、正確性、安全性、Discord APIとの継続的な互換性を保証しません。利用者は、実行前に内容を確認し、必要な権限だけを付与し、テスト環境で検証してください。Botの挙動、投稿内容、収集データおよび運用結果については利用者が責任を負います。</p></section>
+      <section id="security"><h2>第5条（トークン等の安全管理）</h2><p>Botトークン、APIキー、秘密鍵その他の認証情報をプロジェクト、共有URL、プラグイン、公開リポジトリまたは第三者へ含めないでください。漏えいのおそれがある場合は直ちに失効・再発行し、関連するアクセス記録を確認してください。EDBB運営者がトークンの提出を求めることはありません。</p></section>
+      <section id="plugins"><h2>第6条（プラグイン・外部サービス）</h2><p>第三者製プラグイン、外部リンク、CDN、実行環境その他の外部サービスは各提供者の条件に従います。インストール前に提供元、権限、ソースコードおよび通信先を確認してください。EDBBは第三者提供物の内容、安全性または継続提供を保証しません。</p></section>
+      <section id="data"><h2>第7条（データの取扱い）</h2><p>プロジェクトは主に利用者のブラウザ内または利用者が保存したファイルで管理されます。共有・共同編集機能を使う場合、プロジェクト情報がURLまたは通信相手へ渡ることがあります。機密情報を入力せず、共有先と保存先を利用者自身で管理してください。ブラウザのデータ削除、端末故障、通信切断等に備えて定期的にバックアップしてください。</p></section>
+      <section id="rights"><h2>第8条（権利関係）</h2><p>EDBBのソースコードはリポジトリに掲示されたライセンスに従います。利用者が作成したプロジェクトおよび生成コードに関する権利は、第三者の権利や利用ライセンスを除き利用者に帰属します。利用者は、入力素材について必要な権利を有することを保証します。</p></section>
+      <section id="availability"><h2>第9条（提供の変更・停止および利用制限）</h2><p>保守、障害、安全確保、法令・外部サービスの変更その他の理由により、事前通知なく機能を変更または停止することがあります。本規約への重大な違反または安全上の危険がある場合、利用や連携を制限することがあります。</p></section>
+      <section id="disclaimer"><h2>第10条（無保証・責任制限）</h2><p>EDBBは「現状有姿」で提供され、特定目的への適合性、正確性、可用性、完全性または無侵害を保証しません。適用法令で認められる範囲において、EDBBの開発者および貢献者は、利用または利用不能、データ消失、アカウント措置、第三者との紛争その他から生じる間接損害・特別損害・逸失利益について責任を負いません。</p></section>
+      <section><h2>第11条（規約の変更）</h2><p>必要に応じて本規約を変更できます。重要な変更はウェブサイトまたはリポジトリ上で案内し、掲示した適用日から効力を生じます。変更後に利用を継続した場合、変更後の規約に同意したものとみなされます。</p></section>
+      <section><h2>第12条（準拠法・相談窓口）</h2><p>本規約は日本法を準拠法とします。問題が生じた場合は、まず誠実に協議して解決を図ります。技術的な問い合わせや規約に関する連絡は、<a href="https://github.com/himais0giiiin/easy-bdc/issues" target="_blank" rel="noopener">GitHub Issues</a>から行ってください。</p></section>
+    </article>
+  </main>
+</body>
+</html>

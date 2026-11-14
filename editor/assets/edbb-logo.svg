@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <clipPath id="bot">
+      <path d="M27 16 39 12l4 9h14l4-9 12 4q18 23 20 56L73 84l-6-11q-17 6-34 0l-6 11L7 72q2-33 20-56Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#bot)">
+    <path fill="#6366f1" d="M0 0h100v100H0z"/>
+    <g stroke="#fff" stroke-opacity=".25" stroke-width="1.5">
+      <path fill="#a855f7" d="M0 6h48v18H0z M0 63h46v21H0z"/>
+      <path fill="#ef647c" d="M48 6h52v35H48z"/>
+      <path fill="#27b58a" d="M0 24h48v18H0z M46 63h54v31H46z"/>
+      <path fill="#daa044" d="M16 42h50v21H16z"/>
+      <path fill="#3b9dd0" d="M66 41h34v22H66z"/>
+    </g>
+    <g stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round">
+      <path d="M20 32h13 M56 16h17 M25 50h20 M61 76h20 M74 49h12 M18 71h16"/>
+    </g>
+  </g>
+  <ellipse cx="34" cy="49" rx="8" ry="10" fill="#fff"/>
+  <ellipse cx="66" cy="49" rx="8" ry="10" fill="#fff"/>
+  <path d="M30 65q20 11 40 0" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+</svg>

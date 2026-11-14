@@ -169,6 +169,13 @@ export const getBranchCode = (block, name) => {
     return code;
 };
 
+export const applyEventBlockStyle = (block, colour) => {
+    block.setColour(colour);
+    if (typeof block.setHat === 'function') {
+        block.setHat('cap');
+    }
+};
+
 export const getJsonDatasetLiteral = (datasetName) => {
     const store = getJsonDataStore();
     if (!store || !datasetName || datasetName === JSON_DATASET_EMPTY_ID) {

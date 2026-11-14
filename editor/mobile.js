@@ -1,110 +1,56 @@
-(function () {
-  const isMobile = window.innerWidth < 768;
-  // Chrome（特にモバイル）で SVG の <text> を直接編集すると
-  // キャレット位置や IME が壊れる不具合があるため、
-  // 回避策として <input> を同じ位置に重ねて編集させている。
-  if (!isMobile) return;
-  Blockly.FieldTextInput.prototype.showEditor_ = function () {
-    const field = this;
-    const svgText = field.textElement_;
-    if (!svgText) return;
+// Keep touch phones in the mobile layout when rotated to landscape.
+export const MOBILE_MEDIA_QUERY = '(max-width: 767px), (pointer: coarse) and (max-height: 600px)';
 
-    const computed = window.getComputedStyle(svgText);
-    const font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
+const guardedPrototypes = new WeakSet();
 
-    const input = document.createElement("input");
-    input.type = "text";
-    input.value = field.getValue();
-    input.className = "blocklyMobileInput";
-
-    input.style.position = "absolute";
-    input.style.font = font;
-    input.style.lineHeight = computed.lineHeight;
-    input.style.padding = "0";
-    input.style.margin = "0";
-    input.style.zIndex = 99999;
-    document.body.appendChild(input);
-
-    const syncPosition = () => {
-      const r = svgText.getBoundingClientRect();
-      input.style.left = `${r.left + window.scrollX}px`;
-      input.style.top = `${r.top + window.scrollY}px`;
-      input.style.width = `${r.width}px`;
-      input.style.height = `${r.height}px`;
-    };
-
-    syncPosition();
-    input.focus();
-    input.select();
-
-    let liveValue = input.value;
-    let composing = false;
-    let pendingEnter = false;
-    let finished = false;
-
-    const update = () => {
-      const value = liveValue || " ";
-
-      const ctx = document.createElement("canvas").getContext("2d");
-      ctx.font = font;
-      const w = ctx.measureText(value).width;
-
-      field.size_.width = w + 8;
-      svgText.textContent = value;
-
-      field.sourceBlock_.render();
-
-      requestAnimationFrame(syncPosition);
-    };
-
-    const syncFromInput = () => {
-      liveValue = input.value;
-      update();
-    };
-
-    const cleanup = () => {
-      window.removeEventListener("resize", syncPosition);
-      window.removeEventListener("scroll", syncPosition, true);
-    };
-
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      syncFromInput();
-      field.setValue(liveValue);
-      cleanup();
-      input.remove();
-    };
-
-    input.addEventListener("input", syncFromInput);
-
-    input.addEventListener("compositionstart", () => {
-      composing = true;
-      pendingEnter = false;
-    });
-
-    input.addEventListener("compositionupdate", syncFromInput);
-
-    input.addEventListener("compositionend", () => {
-      composing = false;
-      syncFromInput();
-      if (pendingEnter) finish();
-    });
-
-    input.addEventListener("blur", finish);
-    input.addEventListener("keydown", e => {
-      if (e.key === "Enter") {
-        if (e.isComposing || composing) {
-          pendingEnter = true;
-          return;
-        }
-        e.preventDefault();
-        finish();
-      }
-    });
-
-    window.addEventListener("resize", syncPosition);
-    window.addEventListener("scroll", syncPosition, true);
+export const installMobileInputGuard = (blockly, isMobile) => {
+  const prototype = blockly.FieldInput?.prototype || blockly.FieldTextInput?.prototype;
+  const originalKeyDown = prototype?.onHtmlInputKeyDown_;
+  if (!originalKeyDown || guardedPrototypes.has(prototype)) return;
+  // Blockly already supplies HTML inputs, validators, undo, Escape and a proper
+  // multiline textarea. Do not replace them with a transparent single-line box.
+  prototype.onHtmlInputKeyDown_ = function (event) {
+    if (isMobile() && (event.isComposing || event.keyCode === 229)) return;
+    return originalKeyDown.call(this, event);
   };
+  guardedPrototypes.add(prototype);
+};
 
-})();
+export const getMobileViewport = (windowRef) => {
+  const viewport = windowRef.visualViewport;
+  // Pinch zoom should not resize the app itself.
+  const useVisualViewport = viewport && (!viewport.scale || viewport.scale === 1);
+  return {
+    height: Math.round(useVisualViewport ? Math.min(windowRef.innerHeight, viewport.height) : windowRef.innerHeight),
+    top: Math.round(useVisualViewport ? viewport.offsetTop || 0 : 0),
+  };
+};
+
+export const installMobileViewport = (windowRef, root, mobileQuery) => {
+  const update = () => {
+    if (!mobileQuery.matches) {
+      root.style.removeProperty('--edbb-mobile-height');
+      root.style.removeProperty('--edbb-mobile-top');
+      return;
+    }
+    const { height, top } = getMobileViewport(windowRef);
+    root.style.setProperty('--edbb-mobile-height', height + 'px');
+    root.style.setProperty('--edbb-mobile-top', top + 'px');
+  };
+  const surfaces = [windowRef, windowRef.visualViewport].filter(Boolean);
+  surfaces.forEach(surface => surface.addEventListener('resize', update));
+  windowRef.visualViewport?.addEventListener('scroll', update);
+  mobileQuery.addEventListener('change', update);
+  update();
+  return () => {
+    surfaces.forEach(surface => surface.removeEventListener('resize', update));
+    windowRef.visualViewport?.removeEventListener('scroll', update);
+    mobileQuery.removeEventListener('change', update);
+  };
+};
+
+if (typeof window !== 'undefined' && typeof Blockly !== 'undefined') {
+  const mobileQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
+  installMobileInputGuard(Blockly, () => mobileQuery.matches);
+  installMobileViewport(window, document.documentElement, mobileQuery);
+}
