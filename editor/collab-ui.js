@@ -245,6 +245,7 @@ export class CollabUI {
         if (data.voluntary) this.manager.disconnect();
         this.exitPromptOpen = false;
         if (shouldKeep) {
+            this.manager.notify('local_edit_resumed', { restored: false });
             this.showToast('現在の内容を維持してローカル編集を継続します', 'success');
             // Auto save current state
             try {
@@ -260,6 +261,7 @@ export class CollabUI {
             this.showToast('バックアップを復元できませんでした。', 'error');
             return;
         }
+        this.manager.notify('local_edit_resumed', { restored: true });
         window.__edbb_storage?.save?.();
         this.showToast('参加前の作品を復元しました', 'success');
     }

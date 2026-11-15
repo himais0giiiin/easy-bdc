@@ -1,9 +1,10 @@
+import { createBlockIcon } from './icons.js';
 import { normalizeMathNumberInput, normalizeMathNumberLiteral, getBranchCode } from './core.js';
 
 export function initMisc() {
     Blockly.Blocks['custom_python_code'] = {
         init: function () {
-            this.appendDummyInput().appendField('🐍 Pythonコード実行');
+            this.appendDummyInput().appendField(createBlockIcon('🐍')).appendField('Pythonコード実行');
             const FieldMultiline = (typeof FieldMultilineInput !== 'undefined')
                 ? FieldMultilineInput
                 : (Blockly.FieldMultilineInput || Blockly.FieldTextInput);
@@ -46,7 +47,7 @@ export function initMisc() {
 
     Blockly.Blocks['random_integer'] = {
         init: function () {
-            this.appendValueInput('FROM').setCheck('Number').appendField('🎲 乱数 (最小');
+            this.appendValueInput('FROM').setCheck('Number').appendField(createBlockIcon('🎲')).appendField('乱数 (最小');
             this.appendValueInput('TO').setCheck('Number').appendField('〜 最大');
             this.appendDummyInput().appendField(')');
             this.setInputsInline(true);
@@ -60,10 +61,7 @@ export function initMisc() {
         return [`random.randint(${from}, ${to})`, Blockly.Python.ORDER_ATOMIC];
     };
 
-    Blockly.Python.forBlock['math_round'] = function (block) {
-        const num = Blockly.Python.valueToCode(block, 'NUM', Blockly.Python.ORDER_NONE) || '0';
-        return [num, Blockly.Python.ORDER_NONE];
-    };
+    // Keep Blockly's standard rounding generator (ROUND / ROUNDUP / ROUNDDOWN).
 
     Blockly.Blocks['text_replace'] = {
         init: function () {
@@ -107,7 +105,7 @@ export function initMisc() {
 
     Blockly.Blocks['print_to_console'] = {
         init: function () {
-            this.appendValueInput('TEXT').setCheck(null).appendField('🖨️ コンソールに表示');
+            this.appendValueInput('TEXT').setCheck(null).appendField(createBlockIcon('🖨️')).appendField('コンソールに表示');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(160);
@@ -120,7 +118,7 @@ export function initMisc() {
 
     Blockly.Blocks['get_current_time'] = {
         init: function () {
-            this.appendDummyInput().appendField('🕒 現在時刻 (文字列)');
+            this.appendDummyInput().appendField(createBlockIcon('🕒')).appendField('現在時刻 (文字列)');
             this.setOutput(true, 'String');
             this.setColour(260);
         },
@@ -131,7 +129,7 @@ export function initMisc() {
 
     Blockly.Blocks['wait_seconds'] = {
         init: function () {
-            this.appendValueInput('SECONDS').setCheck('Number').appendField('⏳');
+            this.appendValueInput('SECONDS').setCheck('Number').appendField(createBlockIcon('⏳'));
             this.appendDummyInput().appendField('秒待つ');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -158,6 +156,31 @@ export function initMisc() {
             code += `else:\n${branchCode}`;
         }
         return code;
+    };
+
+    Blockly.Blocks['flow_return_value'] = {
+        init: function () {
+            this.appendValueInput('VALUE').appendField(createBlockIcon('↩️')).appendField('値を返す');
+            this.setPreviousStatement(true, null);
+            this.setColour(290);
+            this.setTooltip('現在の関数やイベントを終了し、指定した値を返します。');
+        },
+    };
+    Blockly.Python.forBlock['flow_return_value'] = function (block) {
+        const value = Blockly.Python.valueToCode(block, 'VALUE', Blockly.Python.ORDER_NONE) || 'None';
+        return `return ${value}\n`;
+    };
+
+    Blockly.Blocks['flow_return'] = {
+        init: function () {
+            this.appendDummyInput().appendField(createBlockIcon('↩️')).appendField('処理を終了して戻る');
+            this.setPreviousStatement(true, null);
+            this.setColour(290);
+            this.setTooltip('現在の関数やイベントをここで終了します。');
+        },
+    };
+    Blockly.Python.forBlock['flow_return'] = function () {
+        return 'return\n';
     };
 
     Blockly.Python.forBlock['procedures_defnoreturn'] = Blockly.Python.forBlock['procedures_defreturn'] = function (block) {
@@ -207,11 +230,11 @@ export function initMisc() {
     Blockly.Blocks['uninstalled_block_placeholder'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField(new Blockly.FieldLabel('📦'), 'ICON')
+                .appendField(createBlockIcon('📦', '#475569'), 'ICON')
                 .appendField(new Blockly.FieldLabel(''), 'STATUS')
                 .appendField(new Blockly.FieldLabel('不明なブロック'), 'NAME');
             this.appendDummyInput()
-                .appendField('⚠️')
+                .appendField(createBlockIcon('⚠️', '#475569'))
                 .appendField(new Blockly.FieldLabel('プラグインが必要です'), 'PLUGIN');
             this.setColour('#e2e8f0');
             this.setTooltip('このブロックを使用するには、対象のプラグインをインストールして有効にしてください。');

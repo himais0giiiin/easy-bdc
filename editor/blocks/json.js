@@ -1,3 +1,4 @@
+import { createBlockIcon } from './icons.js';
 import {
     FieldJsonDatasetDropdown,
     buildJsonRuntimeSaveCode,
@@ -10,7 +11,7 @@ import {
 export function initJson() {
     Blockly.Blocks['json_load'] = {
         init: function () {
-            this.appendValueInput('FILENAME').setCheck('String').appendField('📂 JSONファイルを読み込む (');
+            this.appendValueInput('FILENAME').setCheck('String').appendField(createBlockIcon('📂')).appendField('JSONファイルを読み込む (');
             this.appendDummyInput().appendField(')');
             this.setOutput(true, null);
             this.setColour(30);
@@ -23,7 +24,7 @@ export function initJson() {
 
     Blockly.Blocks['json_save'] = {
         init: function () {
-            this.appendValueInput('DATA').setCheck(null).appendField('💾 データを保存: ');
+            this.appendValueInput('DATA').setCheck(null).appendField(createBlockIcon('💾')).appendField('データを保存: ');
             this.appendValueInput('FILENAME').setCheck('String').appendField(' ファイル名(');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);
@@ -39,7 +40,7 @@ export function initJson() {
 
     Blockly.Blocks['dict_add'] = {
         init: function () {
-            this.appendValueInput('DICT').setCheck(null).appendField('🧩 JSONに');
+            this.appendValueInput('DICT').setCheck(null).appendField(createBlockIcon('🧩')).appendField('JSONに');
             this.appendValueInput('KEY').setCheck('String').appendField('キー');
             this.appendValueInput('VALUE').setCheck(null).appendField('値を追加');
             this.appendDummyInput().appendField('(同じキーは上書き)');
@@ -63,7 +64,7 @@ export function initJson() {
 
     Blockly.Blocks['dict_delete'] = {
         init: function () {
-            this.appendValueInput('DICT').setCheck(null).appendField('🗑️ JSONから');
+            this.appendValueInput('DICT').setCheck(null).appendField(createBlockIcon('🗑️')).appendField('JSONから');
             this.appendValueInput('KEY').setCheck('String').appendField('キーを削除');
             this.setInputsInline(true);
             this.setPreviousStatement(true, null);
@@ -84,7 +85,7 @@ export function initJson() {
 
     Blockly.Blocks['dict_has_key'] = {
         init: function () {
-            this.appendValueInput('DICT').setCheck(null).appendField('❓ JSONに');
+            this.appendValueInput('DICT').setCheck(null).appendField(createBlockIcon('❓')).appendField('JSONに');
             this.appendValueInput('KEY').setCheck('String').appendField('キーがある');
             this.setInputsInline(true);
             this.setOutput(true, 'Boolean');
@@ -100,7 +101,7 @@ export function initJson() {
 
     Blockly.Blocks['dict_keys'] = {
         init: function () {
-            this.appendValueInput('DICT').setCheck(null).appendField('📋 JSONのキー一覧');
+            this.appendValueInput('DICT').setCheck(null).appendField(createBlockIcon('📋')).appendField('JSONのキー一覧');
             this.setOutput(true, 'Array');
             this.setColour(30);
             this.setTooltip('JSONオブジェクトのキー一覧をリストで返します。');
@@ -114,7 +115,7 @@ export function initJson() {
     Blockly.Blocks['json_dataset_get'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('📦 JSONデータセット')
+                .appendField(createBlockIcon('📦')).appendField('JSONデータセット')
                 .appendField(new FieldJsonDatasetDropdown(), 'DATASET');
             this.setOutput(true, null);
             this.setColour(30);
@@ -130,7 +131,7 @@ export function initJson() {
     Blockly.Blocks['json_dataset_get_value'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('🔎 JSONデータセット')
+                .appendField(createBlockIcon('🔎')).appendField('JSONデータセット')
                 .appendField(new FieldJsonDatasetDropdown(), 'DATASET');
             this.appendValueInput('KEY').setCheck('String').appendField('のキー');
             this.setInputsInline(true);
@@ -150,7 +151,7 @@ export function initJson() {
     Blockly.Blocks['json_dataset_set_value'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('🧩 JSONデータセット')
+                .appendField(createBlockIcon('🧩')).appendField('JSONデータセット')
                 .appendField(new FieldJsonDatasetDropdown(), 'DATASET');
             this.appendValueInput('KEY').setCheck('String').appendField('のキー');
             this.appendValueInput('VALUE').setCheck(null).appendField('を');
@@ -181,7 +182,7 @@ export function initJson() {
     Blockly.Blocks['json_dataset_delete_key'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('🗑️ JSONデータセット')
+                .appendField(createBlockIcon('🗑️')).appendField('JSONデータセット')
                 .appendField(new FieldJsonDatasetDropdown(), 'DATASET');
             this.appendValueInput('KEY').setCheck('String').appendField('のキー');
             this.appendDummyInput().appendField('を削除して保存');
@@ -209,7 +210,7 @@ export function initJson() {
 
     Blockly.Blocks['json_dataset_save_now'] = {
         init: function () {
-            this.appendDummyInput().appendField('💾 JSONデータセットを今すぐ保存');
+            this.appendDummyInput().appendField(createBlockIcon('💾')).appendField('JSONデータセットを今すぐ保存');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(30);

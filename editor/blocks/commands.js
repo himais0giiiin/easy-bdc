@@ -1,4 +1,5 @@
-import { getBranchCode } from './core.js';
+import { createBlockIcon } from './icons.js';
+import { applyEventBlockStyle, getBranchCode } from './core.js';
 
 const normalizePythonIdentifierName = (value, fallback = 'arg') => {
     const normalized = String(value ?? '')
@@ -41,11 +42,11 @@ export function initCommands() {
     Blockly.Blocks['on_command_executed'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('⚡ スラッシュコマンド /')
+                .appendField(createBlockIcon('⚡')).appendField('スラッシュコマンド /')
                 .appendField(new Blockly.FieldTextInput('hello'), 'COMMAND_NAME')
                 .appendField('を使われたとき');
             this.appendStatementInput('DO').setCheck(null).appendField('実行する処理');
-            this.setColour(230);
+            applyEventBlockStyle(this, 230);
         },
     };
     Blockly.Python.forBlock['on_command_executed'] = function (block) {
@@ -59,11 +60,11 @@ export function initCommands() {
     Blockly.Blocks['prefix_command'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('🗣️ プレフィックスコマンド')
+                .appendField(createBlockIcon('🗣️')).appendField('プレフィックスコマンド')
                 .appendField(new Blockly.FieldTextInput('!ping'), 'COMMAND_NAME')
                 .appendField('を実行したとき');
             this.appendStatementInput('DO').setCheck(null).appendField('実行する処理');
-            this.setColour(230);
+            applyEventBlockStyle(this, 230);
         },
     };
     Blockly.Python.forBlock['prefix_command'] = function (block) {
@@ -98,7 +99,7 @@ export function initCommands() {
                 .appendField(new Blockly.FieldTextInput('\u30b3\u30de\u30f3\u30c9\u306e\u8aac\u660e'), 'DESC');
             this.appendStatementInput('ARGS').appendField('\u5f15\u6570');
             this.appendStatementInput('BODY').appendField('\u5b9f\u884c\u3059\u308b\u51e6\u7406');
-            this.setColour(240);
+            applyEventBlockStyle(this, 240);
         },
     };
 

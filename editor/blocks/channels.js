@@ -1,8 +1,9 @@
+import { createBlockIcon } from './icons.js';
 export function initChannels() {
     Blockly.Blocks['get_channel_info'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('📺 現在の')
+                .appendField(createBlockIcon('📺')).appendField('現在の')
                 .appendField(
                     new Blockly.FieldDropdown([
                         ['チャンネルID', 'id'],
@@ -26,7 +27,7 @@ export function initChannels() {
 
     Blockly.Blocks['create_text_channel'] = {
         init: function () {
-            this.appendValueInput('NAME').setCheck('String').appendField('📁 テキストチャンネル作成');
+            this.appendValueInput('NAME').setCheck('String').appendField(createBlockIcon('📁')).appendField('テキストチャンネル作成');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(340);
@@ -39,7 +40,7 @@ export function initChannels() {
 
     Blockly.Blocks['delete_channel'] = {
         init: function () {
-            this.appendValueInput('CHANNEL_ID').setCheck('String').appendField('🗑️ チャンネル削除 (ID');
+            this.appendValueInput('CHANNEL_ID').setCheck('String').appendField(createBlockIcon('🗑️')).appendField('チャンネル削除 (ID');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -54,7 +55,7 @@ export function initChannels() {
     Blockly.Blocks['get_server_info'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('🌐 サーバーの')
+                .appendField(createBlockIcon('🌐')).appendField('サーバーの')
                 .appendField(
                     new Blockly.FieldDropdown([
                         ['サーバーID', 'id'],
@@ -78,7 +79,7 @@ export function initChannels() {
 
     Blockly.Blocks['create_role'] = {
         init: function () {
-            this.appendValueInput('NAME').setCheck('String').appendField('🔰 新規ロール作成 (名前');
+            this.appendValueInput('NAME').setCheck('String').appendField(createBlockIcon('🔰')).appendField('新規ロール作成 (名前');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -92,7 +93,7 @@ export function initChannels() {
 
     Blockly.Blocks['set_bot_status'] = {
         init: function () {
-            this.appendValueInput('STATUS').setCheck('String').appendField('🎮 ステータスを');
+            this.appendValueInput('STATUS').setCheck('String').appendField(createBlockIcon('🎮')).appendField('ステータスを');
             this.appendDummyInput()
                 .appendField(
                     new Blockly.FieldDropdown([
@@ -119,7 +120,7 @@ export function initChannels() {
 
     Blockly.Blocks['join_voice_channel'] = {
         init: function () {
-            this.appendDummyInput().appendField('🔊 実行者のボイスチャンネルに参加');
+            this.appendDummyInput().appendField(createBlockIcon('🔊')).appendField('実行者のボイスチャンネルに参加');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(340);
@@ -131,7 +132,7 @@ export function initChannels() {
 
     Blockly.Blocks['play_audio_file'] = {
         init: function () {
-            this.appendValueInput('FILEPATH').setCheck('String').appendField('🔊 音楽ファイルを再生');
+            this.appendValueInput('FILEPATH').setCheck('String').appendField(createBlockIcon('🔊')).appendField('音楽ファイルを再生');
             this.appendDummyInput().appendField('(パス)');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -146,7 +147,7 @@ export function initChannels() {
 
     Blockly.Blocks['leave_voice_channel'] = {
         init: function () {
-            this.appendDummyInput().appendField('🔇 ボイスチャンネルから切断');
+            this.appendDummyInput().appendField(createBlockIcon('🔇')).appendField('ボイスチャンネルから切断');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(340);

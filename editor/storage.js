@@ -1,7 +1,36 @@
 import { showTopRightToast } from './core/ui.js';
 
+// Blockly only serializes its registered stores, not workspace.getExtraState().
+// Keep the existing Blockly JSON shape and include our project data alongside it.
+const EXTRA_STATE_KEY = 'edbbExtraState';
+const registeredProjectSerializers = new WeakSet();
+const registerProjectSerializer = () => {
+  const registry = Blockly.serialization.registry;
+  if (!registry || registeredProjectSerializers.has(registry)) return;
+  registry.register(EXTRA_STATE_KEY, {
+    // Restore variables first, then our dropdown data, then the blocks that use it.
+    priority: Blockly.serialization.priorities.BLOCKS + 1,
+    save: workspace => workspace.getExtraState?.() || null,
+    clear: workspace => workspace.setExtraState?.({}),
+    load: (state, workspace) => workspace.setExtraState?.(state),
+  });
+  registeredProjectSerializers.add(registry);
+};
+const captureWorkspace = (workspace) => {
+  const state = Blockly.serialization.workspaces.save(workspace);
+  if (workspace.getExtraState) state[EXTRA_STATE_KEY] = workspace.getExtraState();
+  return JSON.parse(JSON.stringify(state));
+};
+const loadWorkspace = (state, workspace) => {
+  Blockly.serialization.workspaces.load(state, workspace);
+  // Legacy projects contain no extra data and must not inherit another project.
+  if (!registeredProjectSerializers.has(Blockly.serialization.registry)) {
+    workspace.setExtraState?.(state?.[EXTRA_STATE_KEY] || {});
+  }
+};
+
 // 共有リンク用にワークスペースのJSONを極小化・圧縮するクラス
-// IDデータを削除し、LZStringで圧縮してURLエンコード可能な形式に変換する
+// 参照IDと追加データを保持し、LZStringでURL用に圧縮する
 class WorkspaceShareCodec {
   static compress(workspace) {
     if (!workspace) return '';
@@ -12,7 +41,7 @@ class WorkspaceShareCodec {
     }
     try {
       // Preserve arbitrary IDs: variable fields and plugin extra state may use them.
-      const raw = Blockly.serialization.workspaces.save(workspace);
+      const raw = captureWorkspace(workspace);
 
       // プラグイン情報の付与
       const payloadObj = {
@@ -105,12 +134,12 @@ class WorkspaceShareCodec {
       // イベントを止めて読み込むことで、自動保存などのリスナーが
       // 共有データでローカルの保存内容を上書きしてしまうのを防ぐ
       if (workspaceData) {
-        const backup = Blockly.serialization.workspaces.save(workspace);
+        const backup = captureWorkspace(workspace);
         Blockly.Events.disable();
         try {
-          Blockly.serialization.workspaces.load(workspaceData, workspace);
+          loadWorkspace(workspaceData, workspace);
         } catch (loadError) {
-          try { Blockly.serialization.workspaces.load(backup, workspace); }
+          try { loadWorkspace(backup, workspace); }
           catch (restoreError) { console.error('Failed to restore workspace after shared-data error:', restoreError); }
           throw loadError;
         } finally {
@@ -134,9 +163,11 @@ export default class WorkspaceStorage {
   #workspace;
   #titleProvider = () => WorkspaceStorage.DEFAULT_TITLE;
   #saveFailureNotified = false;
+  #saveHandler = null;
 
   constructor(workspace) {
     this.#workspace = workspace;
+    registerProjectSerializer();
   }
 
   setTitleProvider(provider) {
@@ -216,7 +247,7 @@ export default class WorkspaceStorage {
   exportText({ pretty = false } = {}) {
     if (!this.#workspace) return '';
     try {
-      const data = Blockly.serialization.workspaces.save(this.#workspace);
+      const data = captureWorkspace(this.#workspace);
       return JSON.stringify(data, null, pretty ? 2 : 0);
     } catch (error) {
       console.error('ワークスペースのシリアライズに失敗しました。', error);
@@ -225,14 +256,16 @@ export default class WorkspaceStorage {
   }
 
   // JSONまたはXML文字列を判別して読み込む
-  importText(text) {
+  importText(text, { preserveLegacyExtraState = false } = {}) {
     let backup;
-    try { backup = Blockly.serialization.workspaces.save(this.#workspace); }
+    try { backup = captureWorkspace(this.#workspace); }
     catch (_) { backup = null; }
     if (WorkspaceStorage.#looksLikeXml(text)) {
       try {
-        const dom = Blockly.Xml.textToDom(text);
+        const textToDom = Blockly.utils?.xml?.textToDom || Blockly.Xml.textToDom;
+        const dom = textToDom(text);
         Blockly.Xml.clearWorkspaceAndLoadFromXml(dom, this.#workspace);
+        this.#workspace.setExtraState?.(preserveLegacyExtraState ? backup?.[EXTRA_STATE_KEY] || {} : {});
         return true;
       } catch (error) {
         this.#restoreBackup(backup);
@@ -242,7 +275,12 @@ export default class WorkspaceStorage {
     try {
       // JSONはシリアライズAPIを使って復元
       const data = JSON.parse(text);
-      Blockly.serialization.workspaces.load(data, this.#workspace);
+      if (preserveLegacyExtraState && data && typeof data === 'object' && !Object.hasOwn(data, EXTRA_STATE_KEY)) {
+        // Older autosaves kept JSON GUI data in a separate browser key. Migrate
+        // that startup fallback once; file/shared imports still start clean.
+        data[EXTRA_STATE_KEY] = backup?.[EXTRA_STATE_KEY] || {};
+      }
+      loadWorkspace(data, this.#workspace);
       return true;
     } catch (error) {
       this.#restoreBackup(backup);
@@ -250,9 +288,11 @@ export default class WorkspaceStorage {
     }
   }
 
+  setSaveHandler(handler) { this.#saveHandler = handler; }
+
   #restoreBackup(backup) {
     if (!backup) return;
-    try { Blockly.serialization.workspaces.load(backup, this.#workspace); }
+    try { loadWorkspace(backup, this.#workspace); }
     catch (restoreError) { console.error('ワークスペースの復元に失敗しました。', restoreError); }
   }
 
@@ -272,7 +312,9 @@ export default class WorkspaceStorage {
     const json = this.exportText({ pretty: false });
     if (!json) return false;
     try {
-      localStorage.setItem(WorkspaceStorage.STORAGE_KEY, json);
+      if (this.#saveHandler) {
+        if (this.#saveHandler(json) === false) return false;
+      } else localStorage.setItem(WorkspaceStorage.STORAGE_KEY, json);
       this.#saveFailureNotified = false;
       return true;
     } catch (error) {
@@ -281,7 +323,7 @@ export default class WorkspaceStorage {
       if (!this.#saveFailureNotified) {
         this.#saveFailureNotified = true;
         showTopRightToast(
-          '自動保存に失敗しました。ブラウザの保存容量が不足している可能性があります。JSONエクスポートでバックアップしてください。',
+          `自動保存に失敗しました。${error?.message || 'ブラウザの保存容量が不足している可能性があります。'} JSONエクスポートでバックアップしてください。`,
           { icon: 'error', timer: 6000 },
         );
       }
@@ -291,10 +333,10 @@ export default class WorkspaceStorage {
 
   // localStorageから保存済みデータを復元
   load() {
-    const stored = localStorage.getItem(WorkspaceStorage.STORAGE_KEY);
-    if (!stored) return false;
     try {
-      if (this.importText(stored)) {
+      const stored = localStorage.getItem(WorkspaceStorage.STORAGE_KEY);
+      if (!stored) return false;
+      if (this.importText(stored, { preserveLegacyExtraState: true })) {
         // XMLから読み込んだ場合でも即JSONに変換し直す
         this.save();
         return true;

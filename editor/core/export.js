@@ -1,5 +1,11 @@
 // editor/core/export.js
 
+import {
+  buildIntentsSection,
+  getWorkspaceBotSettings,
+  normalizeCommandPrefix,
+} from '../bot-settings.js';
+
 const indentBlock = (block, spaces = 4) =>
   block
     .split('\n')
@@ -34,24 +40,10 @@ const normalizePythonOutput = (code) => {
   return cleaned ? `${cleaned}\n` : '';
 };
 
-// 使用しているブロックに必要な intent だけを有効化する
-// (不要な特権インテントを要求しないことで、Developer Portal での設定ミスも防ぐ)
-const buildIntentsSection = (bodyCode) => {
-  const source = String(bodyCode || '');
-  const flags = [];
-  if (/async def on_message|process_commands|@(?:bot|commands)\.command\b|message\.content/.test(source)) {
-    flags.push('intents.message_content = True');
-  }
-  if (/on_member_join|on_member_remove|\.members\b|fetch_members/.test(source)) {
-    flags.push('intents.members = True');
-  }
-  if (/voice|FFmpeg/i.test(source)) {
-    flags.push('intents.voice_states = True');
-  }
-  return ['intents = discord.Intents.default()', ...flags].join('\n');
-};
-
-const convertEventBlock = (block) => {
+const convertEventBlock = (block, isMessageEvent = false) => {
+  // Cog listeners leave Bot.on_message intact, so its built-in command
+  // processing must not be repeated. Strip only our generated final call.
+  if (isMessageEvent) block = block.replace(/\n    await bot\.process_commands\(message\)\s*$/, '\n');
   let updated = block.replace('@bot.event', '@commands.Cog.listener()');
   updated = addSelfParam(updated);
   updated = updated.replace(/\bbot\./g, 'self.bot.');
@@ -501,6 +493,8 @@ const buildInlineRuntimeHelpers = ({ usesJson, usesModal, usesLogging }) => {
 
 export const generatePythonCode = (workspace) => {
   if (!workspace) return '';
+  const botSettings = getWorkspaceBotSettings(workspace);
+  const commandPrefix = normalizeCommandPrefix(botSettings.commandPrefix);
 
   // --- Filter top-level blocks (Issue #28) ---
   // Only allow event-related blocks, procedures, and specifically allowed blocks at the top level.
@@ -590,9 +584,9 @@ export const generatePythonCode = (workspace) => {
 ${header}
 
 # 使用しているブロックに必要な intent のみ有効化しています
-${buildIntentsSection(bodyCode)}
+${buildIntentsSection(bodyCode, botSettings)}
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix=${JSON.stringify(commandPrefix)}, intents=intents)
 ${helperSection}
 ${bodyCode}
 
@@ -750,6 +744,8 @@ const deriveGroupMeta = (block) => {
 
 export const generateSplitPythonFiles = (workspace) => {
   if (!workspace) return {};
+  const botSettings = getWorkspaceBotSettings(workspace);
+  const commandPrefix = normalizeCommandPrefix(botSettings.commandPrefix);
   Blockly.Python.init(workspace);
   const topBlocks = getCodegenTopBlocks(workspace);
   const topBlockEntries = topBlocks.map((block) => {
@@ -796,10 +792,12 @@ export const generateSplitPythonFiles = (workspace) => {
     const className = `${toPascalCase(fileSlug)}Cog`.replace(/^[0-9]/, 'Cog$&');
 
     const needsInteractionHandler = hasComponentEvents || hasModalEvents;
-    const imports = buildImports(cleanedCode, needsInteractionHandler);
+    const procedurePreamble = procedureDefs.length ? procedureDefs.join('\n\n') : '';
+    const moduleCode = `${procedurePreamble}\n${cleanedCode}`;
+    const imports = buildImports(moduleCode, needsInteractionHandler);
 
-    const usesJson = detectJsonUsage(cleanedCode);
-    const usesModal = cleanedCode.includes('EasyModal');
+    const usesJson = detectJsonUsage(moduleCode);
+    const usesModal = moduleCode.includes('EasyModal');
     const sharedSymbols = [];
     if (usesJson) sharedSymbols.push('_load_json_data', '_save_json_data', '_resolve_json_path', '_save_json_dataset_cache');
     if (usesModal) sharedSymbols.push('EasyModal');
@@ -809,12 +807,10 @@ export const generateSplitPythonFiles = (workspace) => {
         : '';
 
     let fileContent = '';
-    const procedurePreamble = procedureDefs.length ? procedureDefs.join('\n\n') : '';
-
     if (kind === 'event') {
       fileContent = buildCogFile(
         className,
-        [convertEventBlock(cleanedCode)],
+        [convertEventBlock(cleanedCode, block.type === 'on_message_create')],
         imports,
         sharedImports,
         procedurePreamble,
@@ -859,14 +855,14 @@ import discord
 from discord.ext import commands
 
 # 使用しているブロックに必要な intent のみ有効化しています
-${buildIntentsSection(allCleaned)}
+${buildIntentsSection(allCleaned, botSettings)}
 
 class EasyBot(commands.Bot):
     async def setup_hook(self):
         for ext in ${JSON.stringify(cogsToLoad)}:
             await self.load_extension(ext)
 
-bot = EasyBot(command_prefix='!', intents=intents)
+bot = EasyBot(command_prefix=${JSON.stringify(commandPrefix)}, intents=intents)
 
 if __name__ == "__main__":
     # トークンの設定

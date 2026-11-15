@@ -408,7 +408,7 @@ svg[display='none'] {
 }
 
 /* Compact desktop header for low-height or narrow desktop windows (e.g. 1080x675, 1280x800) */
-@media (min-width: 768px) and ((max-width: 1360px) or (max-height: 860px)) {
+@media (min-width: 768px) and ((max-width: 1600px) or (max-height: 860px)) {
   .glass-header {
     gap: 10px;
     padding: 10px 14px !important;
@@ -426,7 +426,9 @@ svg[display='none'] {
   #headerActions {
     flex: 1 1 auto;
     min-width: 0;
-    justify-content: flex-end;
+    /* End alignment puts overflowing leading controls outside the scrollable
+       area. Start alignment keeps every action reachable in narrow windows. */
+    justify-content: flex-start;
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
@@ -488,17 +490,6 @@ html.is-mobile .glass-header {
   padding: 12px 14px;
 }
 
-html.is-mobile #mobileHeaderToggle {
-  display: inline-flex;
-}
-
-html.is-mobile #headerActions.collapsed {
-  display: none !important;
-}
-
-html.is-mobile #mobileHeaderToggle svg {
-  transition: transform 0.2s ease;
-}
 
 html.is-mobile #headerActions {
   width: 100%;
@@ -508,8 +499,8 @@ html.is-mobile #headerActions {
 }
 
 html.is-mobile #projectTitleField {
-  width: 100%;
-  max-width: none;
+  width: 100% !important;
+  max-width: none !important;
 }
 
 html.is-mobile #projectTitleInput {
@@ -1314,6 +1305,359 @@ button:active {
   transform: scale(0.92) !important;
 }
 
+/* Resizable workspace panes */
+#workspaceResizeHandle {
+  display: none;
+  flex: 0 0 12px;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  position: relative;
+  z-index: 24;
+  outline: none;
+}
+
+#workspaceResizeHandle::before {
+  content: '';
+  position: absolute;
+  inset: 0 3px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+#workspaceResizeHandle span {
+  width: 4px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--stroke-strong);
+  box-shadow: 0 0 0 1px var(--surface-strong);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+#workspaceResizeHandle:hover::before,
+#workspaceResizeHandle:focus-visible::before,
+#workspaceResizeHandle.is-dragging::before {
+  background: var(--accent-soft);
+}
+
+#workspaceResizeHandle:hover span,
+#workspaceResizeHandle:focus-visible span,
+#workspaceResizeHandle.is-dragging span {
+  background: var(--accent-strong);
+  transform: scaleY(1.15);
+}
+
+#workspace-container.split-view #workspaceResizeHandle {
+  display: flex;
+}
+
+#workspace-container.split-view {
+  gap: 0;
+}
+
+#workspace-container.split-view:not(.split-view-compact) #blocklyDiv {
+  flex: 0 0 var(--split-block-ratio, 55%);
+  width: auto;
+  min-width: min(420px, 45vw);
+}
+
+#workspace-container.split-view:not(.split-view-compact) #liveCodeArea {
+  flex: 1 1 0;
+  width: auto;
+  min-width: min(320px, 38vw);
+}
+
+#workspace-container.split-view.split-view-compact #workspaceResizeHandle {
+  flex-basis: 12px;
+  width: 100%;
+  height: 12px;
+  cursor: row-resize;
+}
+
+#workspace-container.split-view.split-view-compact #workspaceResizeHandle::before {
+  inset: 3px 0;
+}
+
+#workspace-container.split-view.split-view-compact #workspaceResizeHandle span {
+  width: 44px;
+  height: 4px;
+}
+
+#workspace-container.split-view.split-view-compact #workspaceResizeHandle:hover span,
+#workspace-container.split-view.split-view-compact #workspaceResizeHandle:focus-visible span,
+#workspace-container.split-view.split-view-compact #workspaceResizeHandle.is-dragging span {
+  transform: scaleX(1.15);
+}
+
+#workspace-container.split-view.split-view-compact #blocklyDiv {
+  flex: 0 0 calc(var(--split-block-ratio, 58%) - 6px);
+  height: auto;
+  min-height: 220px;
+}
+
+#workspace-container.split-view.split-view-compact #liveCodeArea {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 180px;
+}
+
+/* Keep flyout width stable when switching categories. */
+html:not(.is-mobile) .blocklyFlyout {
+  width: 340px !important;
+}
+
+html.is-mobile .blocklyFlyout {
+  width: min(220px, calc(100vw - 76px)) !important;
+  max-width: none;
+}
+
+
+/* Mobile quick dock and touch-friendly layout */
+#mobileActionDock {
+  position: fixed;
+  inset: auto 10px calc(8px + env(safe-area-inset-bottom)) 10px;
+  z-index: 45;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 7px;
+  border: 1px solid var(--stroke-strong);
+  border-radius: 18px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+html.is-mobile #mobileActionDock {
+  display: grid !important;
+}
+
+#mobileActionDock button {
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+#mobileActionDock button:active,
+#mobileActionDock button:focus-visible {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+#mobileActionDock svg {
+  width: 19px;
+  height: 19px;
+}
+
+#mobileActionDock button:disabled,
+.mobile-menu-grid button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mobile-menu-content {
+  width: 100%;
+  max-height: var(--edbb-mobile-height, 100dvh);
+  overflow-y: auto;
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--surface-strong);
+  color: var(--text-main);
+}
+
+.mobile-menu-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.mobile-menu-heading button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+#mobileProjectTitleSlot #projectTitleField {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 16px;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+#mobileProjectTitleSlot #projectTitleField label {
+  display: block !important;
+}
+
+#mobileProjectTitleSlot #projectTitleInput {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.mobile-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mobile-menu-grid button,
+.mobile-menu-grid a {
+  min-width: 0;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--stroke-strong);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mobile-menu-grid svg,
+.mobile-menu-heading svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.mobile-menu-note {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+/* The third-party help widget has a higher layer than our dialogs. */
+html.is-mobile:has(#mobileActionsModal.show-modal) #docsbotai-root {
+  visibility: hidden !important;
+}
+
+html.is-mobile .glass-header {
+  position: relative;
+  padding: 10px 12px !important;
+  gap: 8px;
+}
+
+html.is-mobile .glass-header > .flex.items-center.gap-4 {
+  min-width: 0;
+  padding-right: 0;
+  gap: 9px !important;
+}
+
+html.is-mobile .glass-header h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+html.is-mobile .glass-header h1 + p {
+  display: none;
+}
+
+html.is-mobile #headerActions {
+  display: none !important;
+}
+
+html.is-mobile #workspace-container {
+  padding: 6px 6px calc(78px + env(safe-area-inset-bottom));
+}
+
+html.is-mobile #blocklyDiv {
+  border-radius: 12px;
+}
+
+html.is-mobile #workspaceResizeHandle {
+  display: none !important;
+}
+
+html.is-mobile #workspace-container.split-view #blocklyDiv,
+html.is-mobile #workspace-container.split-view.split-view-compact #blocklyDiv {
+  flex: 1 1 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+html.is-mobile #collabBtn {
+  flex: 1 1 calc(50% - 5px);
+  margin-left: 0 !important;
+}
+
+html.is-mobile .modal-backdrop {
+  padding: 0 !important;
+  height: var(--edbb-mobile-height, 100dvh);
+  top: var(--edbb-mobile-top, 0px);
+  bottom: auto;
+}
+
+html.is-mobile .modal-backdrop > .modal-content {
+  width: 100%;
+  max-width: none;
+  height: var(--edbb-mobile-height, 100dvh);
+  max-height: none;
+  border-radius: 0;
+}
+
+html.is-mobile body {
+  height: var(--edbb-mobile-height, 100dvh);
+}
+
+html.is-mobile #codeModalHeader {
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+
+html.is-mobile #codeModalHeader > div {
+  min-width: 0;
+}
+
+html.is-mobile #codeModalHeader > div:last-child {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+html.is-mobile #codeModalHeader button {
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+/* Do not cover the text editor with the quick dock while the keyboard is open. */
+html.is-mobile body:has(input:focus, textarea:focus, [contenteditable="true"]:focus) #mobileActionDock {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (max-width: 380px) {
+
+  html.is-mobile .glass-header h1 {
+    font-size: 0.85rem;
+  }
+
+  #mobileActionDock {
+    inset-inline: 6px;
+  }
+}
+
 /* README Content Styles */
 .readme-content h1 {
   font-size: 1.875rem;
@@ -1489,4 +1833,33 @@ button:active {
 g.blocklyDraggable > path.blocklyPath {
   transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
 }
+
+.toolbox-svg-icon { display: block; margin: auto; }
+#jsonGuiModal .json-gui__cell-input, #jsonGuiModal .json-gui__cell-select { min-height: 44px; font-size: 16px; padding: 10px; }
+textarea.json-gui__cell-input { resize: vertical; min-width: 0; }
+.json-gui__preview summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+#jsonGuiModal button { min-height: 44px; }
+#jsonGuiModal select { min-height: 44px; font-size: 16px; }
+#jsonGuiModal thead th:first-child { width: 25%; }
+#jsonGuiError { overflow-wrap: anywhere; }
+
+@media (max-width: 1023px) {
+  #jsonGuiModal .json-gui__body { display: block; overflow-y: auto; overscroll-behavior: contain; }
+  #jsonGuiModal aside, #jsonGuiModal section { overflow: visible; }
+  #jsonGuiModal .json-gui__dataset-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #jsonGuiModal aside > p { display: none; }
+}
+html.is-mobile #jsonGuiModal .json-gui__body { display: block; overflow-y: auto; }
+html.is-mobile #jsonGuiModal aside, html.is-mobile #jsonGuiModal section { overflow: visible; padding: 12px; }
+html.is-mobile #jsonGuiModal .json-gui__dataset-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.is-mobile #jsonGuiModal aside > p, html.is-mobile #jsonGuiHelp { display: none; }
+html.is-mobile #jsonGuiModal table, html.is-mobile #jsonGuiRows { display: block; width: 100%; }
+html.is-mobile #jsonGuiModal thead { display: none; }
+html.is-mobile #jsonGuiRows tr { display: grid; grid-template-columns: minmax(0, 1fr); padding: 10px; gap: 10px; }
+html.is-mobile #jsonGuiRows td { display: block; padding: 0; min-width: 0; }
+html.is-mobile #jsonGuiRows td[data-label]::before { content: attr(data-label); display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+html.is-mobile #jsonGuiRows td:last-child { text-align: right; }
+html.is-mobile #jsonGuiRows td:last-child button { min-width: 44px; }
+html.is-mobile #jsonGuiAddRowBtn { width: 100%; }
+html.is-mobile body:has(#jsonGuiModal.show-modal) #docsbotai-root { display: none !important; }
 

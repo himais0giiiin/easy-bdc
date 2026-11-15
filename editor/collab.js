@@ -1,5 +1,5 @@
 /** Host-ordered collaboration. Guests retain unacknowledged edits across snapshots. */
-const PROTOCOL = 2;
+const PROTOCOL = 4;
 const BACKUP_KEY = 'edbb_collab_backup_v2';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
 const clone = value => JSON.parse(JSON.stringify(value));

@@ -1,8 +1,9 @@
+import { createBlockIcon } from './icons.js';
 export function initUsers() {
     Blockly.Blocks['get_user_info'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('👤 実行者(対象)の')
+                .appendField(createBlockIcon('👤')).appendField('実行者(対象)の')
                 .appendField(
                     new Blockly.FieldDropdown([
                         ['ユーザーID', 'id'],
@@ -27,7 +28,7 @@ export function initUsers() {
     Blockly.Blocks['get_member_detail'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField('👤 実行者(対象)の詳細:')
+                .appendField(createBlockIcon('👤')).appendField('実行者(対象)の詳細:')
                 .appendField(
                     new Blockly.FieldDropdown([
                         ['アバターURL', 'avatar.url'],
@@ -54,7 +55,7 @@ export function initUsers() {
 
     Blockly.Blocks['member_has_role'] = {
         init: function () {
-            this.appendValueInput('USER').setCheck('String').appendField('❓ ユーザー');
+            this.appendValueInput('USER').setCheck('String').appendField(createBlockIcon('❓')).appendField('ユーザー');
             this.appendValueInput('ROLE_ID').setCheck('String').appendField('がロール(ID)');
             this.appendDummyInput().appendField('を持っている');
             this.setOutput(true, 'Boolean');
@@ -70,7 +71,7 @@ export function initUsers() {
 
     Blockly.Blocks['kick_user'] = {
         init: function () {
-            this.appendValueInput('USER_ID').setCheck('String').appendField('👢 Kickする (ID');
+            this.appendValueInput('USER_ID').setCheck('String').appendField(createBlockIcon('👢')).appendField('Kickする (ID');
             this.appendValueInput('REASON').setCheck('String').appendField('理由');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);
@@ -86,7 +87,7 @@ export function initUsers() {
 
     Blockly.Blocks['ban_user'] = {
         init: function () {
-            this.appendValueInput('USER_ID').setCheck('String').appendField('🚫 BANする (ID');
+            this.appendValueInput('USER_ID').setCheck('String').appendField(createBlockIcon('🚫')).appendField('BANする (ID');
             this.appendValueInput('REASON').setCheck('String').appendField('理由');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);
@@ -102,7 +103,7 @@ export function initUsers() {
 
     Blockly.Blocks['timeout_user'] = {
         init: function () {
-            this.appendValueInput('USER_ID').setCheck('String').appendField('🔇 タイムアウト (ID');
+            this.appendValueInput('USER_ID').setCheck('String').appendField(createBlockIcon('🔇')).appendField('タイムアウト (ID');
             this.appendValueInput('MINUTES').setCheck('Number').appendField('分');
             this.appendDummyInput().appendField('間)');
             this.setPreviousStatement(true, null);
@@ -118,7 +119,7 @@ export function initUsers() {
 
     Blockly.Blocks['add_user_role'] = {
         init: function () {
-            this.appendValueInput('USER_ID').setCheck('String').appendField('➕ ロール付与 (ユーザーID');
+            this.appendValueInput('USER_ID').setCheck('String').appendField(createBlockIcon('➕')).appendField('ロール付与 (ユーザーID');
             this.appendValueInput('ROLE_ID').setCheck('String').appendField('ロールID');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);
@@ -134,7 +135,7 @@ export function initUsers() {
 
     Blockly.Blocks['remove_user_role'] = {
         init: function () {
-            this.appendValueInput('USER_ID').setCheck('String').appendField('➖ ロール剥奪 (ユーザーID');
+            this.appendValueInput('USER_ID').setCheck('String').appendField(createBlockIcon('➖')).appendField('ロール剥奪 (ユーザーID');
             this.appendValueInput('ROLE_ID').setCheck('String').appendField('ロールID');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);
@@ -150,7 +151,7 @@ export function initUsers() {
 
     Blockly.Blocks['change_nickname'] = {
         init: function () {
-            this.appendValueInput('USER_ID').setCheck('String').appendField('🏷️ ニックネーム変更 (ID');
+            this.appendValueInput('USER_ID').setCheck('String').appendField(createBlockIcon('🏷️')).appendField('ニックネーム変更 (ID');
             this.appendValueInput('NAME').setCheck('String').appendField('新しい名前');
             this.appendDummyInput().appendField(')');
             this.setPreviousStatement(true, null);

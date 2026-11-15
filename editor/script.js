@@ -9,6 +9,13 @@ import { CollabUI } from "./collab-ui.js";
 import { PluginManager } from "./plugin.js";
 import { PluginUI, PLUGIN_FEATURE_TOGGLES_STORAGE_KEY } from "./plugin-ui.js";
 import { BlockSearch } from "./block-search.js";
+import { attachBotSettingsState } from './bot-settings.js';
+import { setupMobileActions } from './mobile-actions.js';
+import { MOBILE_MEDIA_QUERY } from './mobile.js';
+import { createToolboxIcon } from './toolbox-icons.js';
+import { startAppUpdater } from './app-update.js';
+import { setupProjectUI } from './project-ui.js';
+import { setupEditorActions } from './editor-actions.js';
 
 const PROJECT_TITLE_STORAGE_KEY = 'edbb_project_title';
 
@@ -432,21 +439,53 @@ const ensureListGenerator = (() => {
 
 
 const html = document.documentElement;
-const isMobileDevice =
-  typeof window !== 'undefined' && window.innerWidth < 768;
-if (isMobileDevice) {
-  html.classList.add('is-mobile');
-}
+const mobileMediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
+let isMobileDevice = mobileMediaQuery.matches;
+const mobileModeListeners = new Set();
+const syncMobileMode = () => {
+  const nextValue = mobileMediaQuery.matches;
+  const changed = nextValue !== isMobileDevice;
+  isMobileDevice = nextValue;
+  html.classList.toggle('is-mobile', isMobileDevice);
+  if (changed) mobileModeListeners.forEach((listener) => listener(isMobileDevice));
+};
+syncMobileMode();
+mobileMediaQuery.addEventListener?.('change', syncMobileMode);
 
 const applyMobileToolboxIcons = (toolboxEl) => {
-  if (!isMobileDevice || !toolboxEl) return;
+  if (!toolboxEl) return;
   const categories = toolboxEl.querySelectorAll('category');
   categories.forEach((cat) => {
     const icon = cat.getAttribute('data-icon');
     if (icon) {
       const currentName = cat.getAttribute('name') || '';
-      cat.setAttribute('data-label', currentName);
-      cat.setAttribute('name', icon);
+      const originalLabel = cat.getAttribute('data-label') || currentName;
+      cat.setAttribute('data-label', originalLabel);
+      cat.setAttribute('name', originalLabel);
+    }
+  });
+};
+
+const syncRenderedToolboxLabels = (workspaceRef, mobile = isMobileDevice) => {
+  const items = workspaceRef?.getToolbox?.()?.getToolboxItems?.() || [];
+  items.forEach((item) => {
+    const definition = item?.toolboxItemDef_;
+    const icon = definition?.['data-icon'];
+    if (!icon) return;
+    const originalLabel = definition['data-label'] || item.getName?.() || '';
+    definition['data-label'] = originalLabel;
+    item.name_ = originalLabel;
+    if (item.rowDiv_) {
+      item.rowDiv_.setAttribute('aria-label', originalLabel);
+      item.rowDiv_.title = originalLabel;
+    }
+    if (item.labelDom_) {
+      if (mobile) {
+        const accessibleLabel = document.createElement('span');
+        accessibleLabel.className = 'sr-only';
+        accessibleLabel.textContent = originalLabel;
+        item.labelDom_.replaceChildren(createToolboxIcon(icon), accessibleLabel);
+      } else item.labelDom_.textContent = originalLabel;
     }
   });
 };
@@ -817,13 +856,14 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
       return select;
     }
 
-    const input = document.createElement('input');
+    const structured = row.type === 'object' || row.type === 'array';
+    const input = document.createElement(structured || row.type === 'string' ? 'textarea' : 'input');
+    if (input.tagName === 'TEXTAREA') input.rows = structured ? 4 : 2;
     if (row.type === 'number') {
       input.type = 'number';
       input.step = 'any';
       input.placeholder = '例: 100';
     } else {
-      input.type = 'text';
       input.placeholder =
         row.type === 'object' ? '例: {"id": 1}' : row.type === 'array' ? '例: ["a", "b"]' : '例: こんにちは';
     }
@@ -858,11 +898,13 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
 
       const keyCell = document.createElement('td');
       keyCell.className = 'px-2 py-2 align-top';
+      keyCell.dataset.label = '名前（キー）';
       const keyInput = document.createElement('input');
       keyInput.type = 'text';
       keyInput.value = row.key;
       keyInput.placeholder = '例: welcome_message';
       keyInput.className = CELL_INPUT_CLASS;
+      keyInput.setAttribute('aria-label', `${index + 1}行目の名前（キー）`);
       keyInput.addEventListener('input', () => {
         jsonDataStore.updateRow(selectedDataset, index, { key: keyInput.value });
         renderPreview();
@@ -872,16 +914,19 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
 
       const typeCell = document.createElement('td');
       typeCell.className = 'px-2 py-2 align-top';
+      typeCell.dataset.label = 'データの種類';
       const typeSelect = createTypeSelect(row.type);
+      typeSelect.setAttribute('aria-label', `${index + 1}行目のデータの種類`);
       typeSelect.addEventListener('change', () => {
         const nextType = typeSelect.value;
         const patch = { type: nextType };
+        const currentValue = jsonDataStore.getRows(selectedDataset)[index]?.value ?? '';
         // 型に合わない値が残ってエラーにならないように正規化する
         if (nextType === 'boolean') {
-          const normalized = String(row.value ?? '').trim().toLowerCase();
+          const normalized = String(currentValue).trim().toLowerCase();
           patch.value = ['true', '1', 'yes', 'on'].includes(normalized) ? 'true' : 'false';
         } else if (nextType === 'number') {
-          const parsed = Number(String(row.value ?? '').trim());
+          const parsed = Number(String(currentValue).trim());
           patch.value = Number.isFinite(parsed) ? String(parsed) : '0';
         }
         jsonDataStore.updateRow(selectedDataset, index, patch);
@@ -893,7 +938,10 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
 
       const valueCell = document.createElement('td');
       valueCell.className = 'px-2 py-2 align-top';
-      valueCell.appendChild(createValueEditor(row, index));
+      valueCell.dataset.label = '値';
+      const valueEditor = createValueEditor(row, index);
+      valueEditor.setAttribute('aria-label', `${index + 1}行目の値`);
+      valueCell.appendChild(valueEditor);
 
       const actionCell = document.createElement('td');
       actionCell.className = 'px-2 py-2 align-top text-right';
@@ -902,6 +950,7 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
       deleteBtn.className =
         'inline-flex items-center justify-center rounded-lg border border-transparent p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-colors';
       deleteBtn.title = 'この行を削除';
+      deleteBtn.setAttribute('aria-label', `${index + 1}行目を削除`);
       deleteBtn.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
       deleteBtn.addEventListener('click', () => {
         jsonDataStore.removeRow(selectedDataset, index);
@@ -994,12 +1043,20 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
     modal.classList.add('flex');
     void modal.offsetWidth;
     modal.classList.add('show-modal');
+    modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => {
+      if (modal.classList.contains('show-modal')) closeBtn?.focus();
+    });
   };
 
   const closeModal = () => {
     saveNow();
     if (!modal) return;
     modal.classList.remove('show-modal');
+    modal.setAttribute('aria-hidden', 'true');
+    if (modal.contains(document.activeElement)) {
+      (isMobileDevice ? document.getElementById('mobileMoreBtn') : openBtn)?.focus();
+    }
     if (closeTimer) clearTimeout(closeTimer);
     closeTimer = setTimeout(() => {
       modal.classList.remove('flex');
@@ -1050,11 +1107,22 @@ const setupJsonDataManager = ({ workspace, storage, shareFeature }) => {
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+    if (!modal || modal.classList.contains('hidden') || document.querySelector('.swal2-container')) return;
+    if (event.key === 'Escape') {
       closeModal();
+    } else if (event.key === 'Tab') {
+      const controls = [...modal.querySelectorAll('button, input, select, textarea, summary')]
+        .filter(control => !control.disabled && control.getClientRects().length);
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!modal.contains(document.activeElement) || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+      }
     }
   });
   window.addEventListener('beforeunload', saveNow);
+  window.addEventListener('edbb-before-app-update', saveNow);
 
   const applyShareViewState = (isViewOnly) => {
     if (!openBtn) return;
@@ -1115,8 +1183,7 @@ const initializeApp = async () => {
   const blocklyDiv = document.getElementById('blocklyDiv');
   const toolbox = document.getElementById('toolbox');
   const themeToggle = document.getElementById('themeToggle');
-  const headerActions = document.getElementById('headerActions');
-  const mobileHeaderToggle = document.getElementById('mobileHeaderToggle');
+  const workspaceResizeHandle = document.getElementById('workspaceResizeHandle');
   // ヘッダーのコード生成ボタン
   const showCodeBtn = document.getElementById('showCodeBtn');
   const runBotBtn = document.getElementById('runBotBtn');
@@ -1267,6 +1334,10 @@ const initializeApp = async () => {
       availableWidth < requiredWidth || aspectRatio < SPLIT_LAYOUT_MIN_ASPECT_RATIO;
 
     workspaceContainer.classList.toggle('split-view-compact', shouldUseCompactLayout);
+    workspaceResizeHandle?.setAttribute(
+      'aria-orientation',
+      shouldUseCompactLayout ? 'horizontal' : 'vertical',
+    );
   };
 
   const resizeWorkspace = (delayMs = 0) => {
@@ -1331,6 +1402,8 @@ const initializeApp = async () => {
 
   // --- Blocklyワークスペースの初期化 ---
   workspace = Blockly.inject(blocklyDiv, {
+    // Use Blockly's native inline inputs on touch devices, including textareas.
+    modalInputs: false,
     toolbox: toolbox,
     horizontalLayout: false,
     trashcan: true,
@@ -1346,6 +1419,14 @@ const initializeApp = async () => {
     theme: initialTheme,
   });
   setupLiteralInputAutofill(workspace);
+  // Search and plugins also rebuild categories, not just viewport changes.
+  const updateToolbox = workspace.updateToolbox.bind(workspace);
+  workspace.updateToolbox = (...args) => {
+    const result = updateToolbox(...args);
+    syncRenderedToolboxLabels(workspace);
+    return result;
+  };
+  syncRenderedToolboxLabels(workspace);
 
   // --- Smooth Resize Observer ---
   // CSSトランジション中も滑らかにBlocklyをリサイズさせる
@@ -1398,34 +1479,85 @@ const initializeApp = async () => {
     storage,
     shareFeature,
   });
-  if (isMobileDevice && headerActions && mobileHeaderToggle) {
-    mobileHeaderToggle.classList.remove('hidden');
-    let headerExpanded = false;
-    const syncHeaderVisibility = () => {
-      headerActions.classList.toggle('collapsed', !headerExpanded);
-      mobileHeaderToggle.setAttribute('aria-expanded', headerExpanded ? 'true' : 'false');
-      const label = mobileHeaderToggle.querySelector('#mobileHeaderToggleText');
-      if (label) label.textContent = headerExpanded ? '操作を閉じる' : '操作を表示';
-      const icon = mobileHeaderToggle.querySelector('svg');
-      if (icon) icon.style.transform = headerExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
-      resizeWorkspace(150);
+
+  // Retain compatibility with settings already stored in older projects.
+  // There is no longer a settings form or a way to create new settings here.
+  attachBotSettingsState(workspace, () => scheduleLiveCodeRefresh(), { persistDefaults: false });
+
+  const mobileActions = setupMobileActions(document, () => isMobileDevice);
+  mobileModeListeners.add((mobile) => {
+    syncRenderedToolboxLabels(workspace, mobile);
+    mobileActions.syncLayout();
+    resizeWorkspace(100);
+  });
+  mobileActions.syncLayout();
+
+  const SPLIT_RATIO_STORAGE_KEY = 'edbb_split_block_ratio_v1';
+  const clampSplitRatio = (value) => Math.min(75, Math.max(30, Number(value) || 55));
+  let splitRatio = 55;
+  try {
+    splitRatio = clampSplitRatio(localStorage.getItem(SPLIT_RATIO_STORAGE_KEY));
+  } catch (_) {
+    splitRatio = 55;
+  }
+  const applySplitRatio = (value, persist = false) => {
+    splitRatio = clampSplitRatio(value);
+    workspaceContainer?.style.setProperty('--split-block-ratio', `${splitRatio}%`);
+    workspaceResizeHandle?.setAttribute('aria-valuenow', String(Math.round(splitRatio)));
+    if (persist) {
+      try { localStorage.setItem(SPLIT_RATIO_STORAGE_KEY, String(splitRatio)); } catch (_) { /* ignore */ }
+    }
+    resizeWorkspace();
+  };
+  applySplitRatio(splitRatio);
+
+  if (workspaceResizeHandle && workspaceContainer) {
+    let dragging = false;
+    const ratioFromPointer = (event) => {
+      const rect = workspaceContainer.getBoundingClientRect();
+      const compact = workspaceContainer.classList.contains('split-view-compact');
+      return compact
+        ? ((event.clientY - rect.top) / Math.max(1, rect.height)) * 100
+        : ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100;
     };
-    syncHeaderVisibility();
-    mobileHeaderToggle.addEventListener('click', () => {
-      headerExpanded = !headerExpanded;
-      syncHeaderVisibility();
+    const stopDragging = () => {
+      if (!dragging) return;
+      dragging = false;
+      workspaceResizeHandle.classList.remove('is-dragging');
+      applySplitRatio(splitRatio, true);
+      document.body.style.removeProperty('user-select');
+    };
+    workspaceResizeHandle.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      workspaceResizeHandle.classList.add('is-dragging');
+      workspaceResizeHandle.setPointerCapture?.(event.pointerId);
+      document.body.style.userSelect = 'none';
+      applySplitRatio(ratioFromPointer(event));
     });
-  } else if (headerActions) {
-    headerActions.classList.remove('collapsed');
+    workspaceResizeHandle.addEventListener('pointermove', (event) => {
+      if (dragging) applySplitRatio(ratioFromPointer(event));
+    });
+    workspaceResizeHandle.addEventListener('pointerup', stopDragging);
+    workspaceResizeHandle.addEventListener('pointercancel', stopDragging);
+    workspaceResizeHandle.addEventListener('dblclick', () => applySplitRatio(55, true));
+    workspaceResizeHandle.addEventListener('keydown', (event) => {
+      const compact = workspaceContainer.classList.contains('split-view-compact');
+      const decreaseKey = compact ? 'ArrowUp' : 'ArrowLeft';
+      const increaseKey = compact ? 'ArrowDown' : 'ArrowRight';
+      if (event.key !== decreaseKey && event.key !== increaseKey && event.key !== 'Home') return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 55 : splitRatio + (event.key === increaseKey ? 2 : -2);
+      applySplitRatio(next, true);
+    });
   }
 
   // --- パレット（フライアウト）の固定設定 ---
-  if (workspace.getToolbox()) {
-    const flyout = workspace.getToolbox().getFlyout();
-    if (flyout) {
-      flyout.autoClose = false;
-    }
-  }
+  const syncFlyoutAutoClose = () => {
+    const flyout = workspace.getToolbox()?.getFlyout();
+    if (flyout) flyout.autoClose = isMobileDevice;
+  };
+  syncFlyoutAutoClose();
+  mobileModeListeners.add(syncFlyoutAutoClose);
 
   // --- Layout Switching Logic ---
   const setLayout = (mode) => {
@@ -1684,13 +1816,9 @@ const initializeApp = async () => {
   // 検索バーの表示・非表示をツールボックスに連動させる
   const isBlockSearchFeatureEnabled = () => {
     try {
-      const raw = localStorage.getItem(PLUGIN_FEATURE_TOGGLES_STORAGE_KEY);
-      if (!raw) return false;
-      const parsed = JSON.parse(raw);
-      return Boolean(parsed?.blockSearch);
-    } catch (_) {
-      return false;
-    }
+      const parsed = JSON.parse(localStorage.getItem(PLUGIN_FEATURE_TOGGLES_STORAGE_KEY) || '{}');
+      return typeof parsed?.blockSearch === 'boolean' ? parsed.blockSearch : true;
+    } catch (_) { return true; }
   };
 
   const updateSearchVisibility = () => {
@@ -1741,6 +1869,7 @@ const initializeApp = async () => {
 
   const pluginUI = new PluginUI(pluginManager);
   pluginUIRef = pluginUI;
+  setupEditorActions({ workspace, shareFeature, collabManager, pluginUI });
   collabManager.setPluginManager(pluginManager);
   const collabPluginPrompts = new Set();
   collabManager.onStateChange(async (type, data) => {
@@ -1800,9 +1929,11 @@ const initializeApp = async () => {
 
 
   // --- Load Saved Data ---
+  const projects = setupProjectUI({ workspace, storage, shareFeature, collabManager,
+    onLoad: () => { scheduleLiveCodeRefresh(); resizeWorkspace(); window.dispatchEvent(new Event('edbb-workspace-loaded')); } });
+  window.__edbb_projects = projects;
   const sharedApplied = await shareFeature.applySharedLayoutFromQuery();
   if (!sharedApplied) {
-    storage?.load();
     // Keep block interactivity aligned with current (non-share) mode.
     shareFeature.applyUiState();
     // Check URL params for realtime collab only after storage is restored
@@ -1827,25 +1958,6 @@ const initializeApp = async () => {
 
   themeToggle.addEventListener('click', toggleTheme);
 
-  const newProjectBtn = document.getElementById('newProjectBtn');
-  newProjectBtn?.addEventListener('click', async () => {
-    if (shareFeature.isShareViewMode()) return;
-    const ok = await showConfirmDialog(
-      '現在のブロックをすべて削除して新規プロジェクトを開始しますか？この操作は元に戻せません。',
-      { icon: 'warning', confirmButtonText: '削除して新規作成' },
-    );
-    if (!ok) return;
-    workspace.clear();
-    workspace.setExtraState?.({});
-    if (projectTitleInput) projectTitleInput.value = WorkspaceStorage.DEFAULT_TITLE;
-    try {
-      localStorage.setItem(PROJECT_TITLE_STORAGE_KEY, WorkspaceStorage.DEFAULT_TITLE);
-      localStorage.removeItem(JSON_GUI_DATASET_LOCAL_KEY);
-    } catch { /* optional local state */ }
-    storage?.save();
-    showTopRightToast('新規プロジェクトを開始しました', { icon: 'success' });
-  });
-
   // Ctrl/Cmd+S でプロジェクトの保存（JSONエクスポート）ダイアログを開く
   document.addEventListener('keydown', (event) => {
     if (
@@ -1863,6 +1975,12 @@ const initializeApp = async () => {
   importInput.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (!file || !storage) return;
+    try { projects.checkpoint('JSON読込前'); }
+    catch (error) {
+      showTopRightToast(error.message, { icon: 'error' });
+      e.target.value = '';
+      return;
+    }
     storage
       .importFile(file)
       .then((imported) => {
@@ -2504,6 +2622,15 @@ const startApp = async (retryCount = 0) => {
   try {
     await initializeApp();
     window.__edbb_initialized = true;
+    startAppUpdater({
+      save: () => {
+        if (document.body.classList.contains('share-view-mode')) return true;
+        localStorage.setItem(PROJECT_TITLE_STORAGE_KEY, document.getElementById('projectTitleInput')?.value || 'edbb-project');
+        return storage.save();
+      },
+      isBusy: () => workspace?.isDragging?.() || window.__edbb_collab?.manager.status !== 'disconnected',
+      notify: message => showTopRightToast(message, { icon: 'info' }),
+    });
   } catch (e) {
     console.error('App initialization failed:', e);
   } finally {
