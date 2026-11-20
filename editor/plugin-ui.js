@@ -2708,11 +2708,10 @@ export class PluginUI {
         if (typeof marked === 'undefined') return this.escapeHtml(markdown);
 
         // marked.js のオプション設定
+        // (headerIds / mangle は marked v8 で廃止されたため指定しない)
         marked.setOptions({
             gfm: true,
-            breaks: true,
-            headerIds: true,
-            mangle: false
+            breaks: true
         });
 
         // marked.js を使用して Markdown を HTML に変換
@@ -2721,14 +2720,36 @@ export class PluginUI {
 
         // DOMPurify を使用して安全な HTML にサニタイズ
         if (typeof DOMPurify !== 'undefined') {
-            return DOMPurify.sanitize(rawHtml, {
-                // GitHubのREADMEでよく使われるタグと属性を許可
-                ADD_TAGS: ['div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'span', 'img', 'a', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code', 'pre', 'blockquote', 'hr', 'details', 'summary', 'b', 'i', 'strong', 'em', 'del', 'center'],
-                ADD_ATTR: ['class', 'style', 'src', 'href', 'target', 'alt', 'width', 'height', 'align', 'valign', 'border'],
-                // インラインスタイルを許可 (中央揃えなどに必要)
-                FORBID_ATTR: [],
-                FORBID_TAGS: []
-            });
+            // README は第三者が書いた内容なので、エディタの画面を偽装できる属性は通さない。
+            // style はもちろん、class も Tailwind のユーティリティ (fixed / inset-0 / z-50 など) で
+            // 画面全体を覆う偽UIを作れてしまうため、コードブロックの language-* だけ残す。
+            const hardenAttributes = (node) => {
+                if (typeof node.getAttribute !== 'function') return;
+                if (node.hasAttribute('class')) {
+                    const kept = String(node.getAttribute('class') || '')
+                        .split(/\s+/)
+                        .filter((name) => /^language-[\w-]+$/.test(name));
+                    if (kept.length > 0) node.setAttribute('class', kept.join(' '));
+                    else node.removeAttribute('class');
+                }
+                if (node.tagName === 'A' && node.hasAttribute('target')) {
+                    node.setAttribute('target', '_blank');
+                    node.setAttribute('rel', 'noopener noreferrer');
+                }
+            };
+            DOMPurify.addHook('afterSanitizeAttributes', hardenAttributes);
+            try {
+                return DOMPurify.sanitize(rawHtml, {
+                    // GitHubのREADMEでよく使われるタグと属性を許可
+                    ADD_TAGS: ['div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'span', 'img', 'a', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code', 'pre', 'blockquote', 'hr', 'details', 'summary', 'b', 'i', 'strong', 'em', 'del', 'center'],
+                    // 中央揃えは align 属性で表現できる (GitHub 本体も README の style は除去する)
+                    ADD_ATTR: ['class', 'src', 'href', 'target', 'alt', 'width', 'height', 'align', 'valign', 'border'],
+                    FORBID_ATTR: ['style'],
+                    FORBID_TAGS: ['style', 'form', 'input', 'button', 'textarea', 'select']
+                });
+            } finally {
+                DOMPurify.removeHook('afterSanitizeAttributes');
+            }
         }
         return this.escapeHtml(markdown);
     }

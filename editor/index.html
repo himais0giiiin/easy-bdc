@@ -99,14 +99,27 @@
         rel="stylesheet">
 
     <!-- Blockly -->
-    <script src="https://unpkg.com/blockly@11.2.2/blockly.min.js"></script>
-    <script src="https://unpkg.com/blockly@11.2.2/python_compressed.js"></script>
-    <script src="https://unpkg.com/blockly@11.2.2/msg/ja.js"></script>
-    <script src="https://unpkg.com/@blockly/field-multilineinput@5.0.17/dist/index.js"></script>
+    <!-- CDN スクリプトはバージョンを固定し、SRI (integrity) で改ざんを検知する。
+         バージョンを上げるときは integrity も必ず更新すること:
+         curl -sL <URL> | openssl dgst -sha384 -binary | openssl base64 -A -->
+    <script src="https://unpkg.com/blockly@11.2.2/blockly.min.js"
+        integrity="sha384-yfXdnKEtrB0xdlNxau6Dh+gzKXBCCWJCxSVS3usYOHgu9BXHMOotNuWSUu4A/QPO"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/blockly@11.2.2/python_compressed.js"
+        integrity="sha384-iXAeTR0jGgSq/HwRZYUHS0GixxUkcNU5bQzQavmWgZ5CK6SouQoy7uiTWy97QrgP"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/blockly@11.2.2/msg/ja.js"
+        integrity="sha384-vwDwBIqpZ3trnzftlXPz5I2KLW59rnUE3qmcgJ/PRqFMMtz0GRpLJcwHfc0X7s2r"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@blockly/field-multilineinput@5.0.17/dist/index.js"
+        integrity="sha384-KD3e+69NFta3KQiFVjc01rYxXxsrGNIPKYrSVaDRJ7VKdj+ahQJ+XM5UHgaDT40g"
+        crossorigin="anonymous"></script>
     <script type="module" src="./mobile.js"></script>
     <link rel="stylesheet" href="./mobile.css">
     <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.min.js"
+        integrity="sha384-DdDSdhkTpRzHOpRXj0iG8b2rBu5xPWN5SFqnCEZ0YKb/Yh1Ymmc9PVsYEZZOq40r"
+        crossorigin="anonymous"></script>
 
     <!-- Syntax Highlight -->
     <link id="hljsThemeLight" rel="stylesheet"
@@ -114,21 +127,37 @@
     <link id="hljsThemeDark" rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/atom-one-dark-reasonable.min.css"
         disabled>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"
+        integrity="sha384-RH2xi4eIQ/gjtbs9fUXM68sLSi99C7ZWBRX1vDrVv6GQXRibxXLbwO2NGZB74MbU"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/python.min.js"
+        integrity="sha384-eXRt+aAa2ig1yFVDQCLis8k9s/1dikTcigj+/R07yNdIxc8BAG/b1uHDyEW3of17"
+        crossorigin="anonymous"></script>
 
     <!-- LZ-String for Compression -->
-    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"
+        integrity="sha384-0d+Gr7vM4Drod8E3hXKgciWJSWbjD/opKLLygI9ktiWbuvlDwQLzU46wJ9s5gsp7"
+        crossorigin="anonymous"></script>
     <!-- JSZip for Plugin Management -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+        integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"
+        crossorigin="anonymous"></script>
     <!-- Markdown & HTML Rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"
+        integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.17/purify.min.js"
+        integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx"
+        crossorigin="anonymous"></script>
     <!-- SweetAlert2 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js"
+        integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2"
+        crossorigin="anonymous"></script>
     <!-- PeerJS for Realtime Collaborative Editing -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"
+        integrity="sha384-nlUQ8ZqCbvStErob+biJNzSgltf6urV3VGqhfIfzhmg9RXmpeRm76ELw0pYnKlTR"
+        crossorigin="anonymous"></script>
 
 
 

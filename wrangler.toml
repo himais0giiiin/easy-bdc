@@ -29,3 +29,13 @@ head_sampling_rate = 1
 [[kv_namespaces]]
 binding = "SHORT_KV"
 id = "9a0530f63a9a4e6780f595b56d819b23"
+
+# /share/create の連投対策: 同一IPから 60 秒あたり 20 回まで
+# (index.ts はこの束縛が無くても動くので、不要なら削除してよい)
+[[ratelimits]]
+name = "SHARE_RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
